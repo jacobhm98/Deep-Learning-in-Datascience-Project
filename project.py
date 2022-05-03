@@ -11,6 +11,18 @@ import torch.optim as optim
 from tqdm import tqdm
 import copy
 
+def cat_or_dog(filename):
+    '''
+    Parameter :
+    
+    Filename : filename string
+    Returns :
+    cat/dog string label
+    '''
+    if(filename[0].isupper()):
+        return 'cat'
+    else:
+        return 'dog'
 def download_model(model_name, freeze, pretrained):
     '''
     Parameters:
@@ -77,6 +89,7 @@ def train_model(model, train_dataloader, test_dataloader, loss_fxn, optimizer, n
                 for inputs, labels in train_dataloader:
                     inputs = inputs.to(device)
                     labels = labels.to(device)
+                    dataset_size = len(labels)
                     with torch.set_grad_enabled(True):
                         outputs = model(inputs)
                         _, preds = torch.max(outputs, 1)
@@ -87,8 +100,8 @@ def train_model(model, train_dataloader, test_dataloader, loss_fxn, optimizer, n
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
 
-                    epoch_loss = running_loss / batch_size
-                    epoch_acc = running_corrects.double() / batch_size
+                    epoch_loss = running_loss / dataset_size
+                    epoch_acc = running_corrects.double() / dataset_size
 
                     print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                         phase, epoch_loss, epoch_acc))
@@ -99,12 +112,13 @@ def train_model(model, train_dataloader, test_dataloader, loss_fxn, optimizer, n
 
                 # Iterate over data.
                 for inputs, labels in test_dataloader:
+                    dataset_size = len(labels)
                     inputs = inputs.to(device)
                     labels = labels.to(device)
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
-                    epoch_loss = running_loss / batch_size
-                    epoch_acc = running_corrects.double() / batch_size
+                    epoch_loss = running_loss / dataset_size
+                    epoch_acc = running_corrects.double() / dataset_size
 
                     print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                         phase, epoch_loss, epoch_acc))
