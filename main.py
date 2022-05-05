@@ -14,7 +14,7 @@ def main():
     model_name = 'resnet18'
 
     # download the train and test dataset and create batches for train and test dataset
-    train_data, test_data = download_dataset(batch_size)
+    train_data, test_data = data_utils.download_dataset(batch_size)
     train_data, val_data = data_utils.train_val_split(train_data)
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
