@@ -1,18 +1,41 @@
-# This is a sample Python script.
-import torch
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from nn_lib import *
+from torch import optim
+import data_utils
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-    print("GPU available? ", torch.cuda.is_available())
+def main():
+    # hyperparameters
+    # set this to 2 if you want Cat dog classification else 37
+    no_classes = 2
+    batch_size = 64
+    no_epochs = 10
+    lr = 0.001
+    loss_fxn = nn.CrossEntropyLoss()
+    model_name = 'resnet18'
+
+    # download the train and test dataset and create batches for train and test dataset
+    train_data, test_data = data_utils.download_dataset()
+    train_data, val_data = data_utils.train_val_split(train_data)
+
+    # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
+    cat_dog_dict = data_utils.create_cat_dog_dict()
+
+    # use GPU if available else use CPU
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Download the pretrained model, where you can either freeze the
+    # previous layers or fine tune the whole network,
+    # by setting the freeze variable
+    resnet_model = download_model(model_name, freeze=True, pretrained=True)
+    # added a last layer to the network
+    cat_dog_resnet_model = modify_model(resnet_model, no_classes)
+
+    optimizer = optim.SGD(cat_dog_resnet_model.parameters(), lr=lr)
+    trained_model = train_model(cat_dog_resnet_model, train_data, val_data, loss_fxn, optimizer, no_epochs, device,
+                                batch_size, cat_dog_dict)
+    torch.save(trained_model, "models/trained_model.model")
+    print("Model trained!!")
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    main()
