@@ -31,7 +31,6 @@ def create_cat_dog_dict():
             dog_lis.append(id)
     a_file.close()
     cat_dog_dict = {"cat": cat_lis, "dog": dog_lis}
-    print(cat_dog_dict)
     return cat_dog_dict
 
 
@@ -120,11 +119,11 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                     running_corrects = 0
                     train_dataset_size = len(labels)
                     inputs = inputs.to(device)
+                    if cat_dog:
+                        labels = gen_cat_dog_label(cat_dog_dict, labels)
                     labels = labels.to(device)
                     outputs = model(inputs)
                     _, preds = torch.max(outputs, dim=1)
-                    if cat_dog:
-                        labels = gen_cat_dog_label(cat_dog_dict, labels)
                     running_loss += loss.item()
                     running_corrects += torch.sum(preds == labels.data)
                 epoch_loss = running_loss / val_dataset_size
