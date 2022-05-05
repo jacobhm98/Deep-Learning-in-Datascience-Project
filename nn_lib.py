@@ -7,31 +7,6 @@ from tqdm import tqdm
 import copy
 
 
-# note that in the data/annotations/list.txt has filename | 1:37 Class ids | 1:Cat 2:Dog | 1-25:Cat 1:12:Dog
-# so function given an id get whether cat or dog, 
-# creating a dictionary with {'cat':[list of ids], 'dog':[list of ids]}, computed in the beginning first and then retrive later.
-def create_cat_dog_dict():
-    '''
-    Returns:
-    {'cat':[list of ids], 'dog':[list of ids]}
-    '''
-    cat_lis = []
-    dog_lis = []
-    list_file_path = "data/oxford-iiit-pet/annotations/list.txt"
-    a_file = open(list_file_path)
-    lines = a_file.readlines()[6:]
-    for line in lines:
-        id = line.rstrip().split()[1]
-        if id in cat_lis or id in dog_lis:
-            continue
-        cat_dog = line.rstrip().split()[2]
-        if (cat_dog == '1'):
-            cat_lis.append(id)
-        else:
-            dog_lis.append(id)
-    a_file.close()
-    cat_dog_dict = {"cat": cat_lis, "dog": dog_lis}
-    return cat_dog_dict
 
 
 def download_model(model_name, freeze, pretrained):
@@ -86,24 +61,23 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     for _ in tqdm(range(no_epochs)):
         for phase in ['train', 'val']:
             if phase == 'train':
+                running_loss = 0.0
+                running_corrects = 0
                 model.train()  # Set model to training mode
                 for inputs, labels in train_dataloader:
-                    running_loss = 0.0
-                    running_corrects = 0
                     inputs = inputs.to(device)
                     labels = labels.to(device)
                     if cat_dog:
                         labels = gen_cat_dog_label(cat_dog_dict, labels)
-                    train_dataset_size = len(train_dataloader)
                     with torch.set_grad_enabled(True):
                         outputs = model(inputs)
-                        _, preds = torch.max(outputs, 1)
+                        preds = torch.argmax(outputs, 1, keepdim=True)
                         loss = loss_fxn(outputs, labels)
                         optimizer.zero_grad()
                         loss.backward()
                         optimizer.step()
                     running_loss += loss.item()
-                    running_corrects += torch.sum(preds == labels.data)
+                    running_corrects += torch.sum(preds.T == labels.data)
 
                 epoch_loss = running_loss / train_dataset_size
                 epoch_acc = running_corrects.double() / train_dataset_size
@@ -112,20 +86,19 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                     phase, epoch_loss, epoch_acc))
             else:
                 model.eval()  # Set model to evaluate mode
+                running_loss = 0.0
+                running_corrects = 0
 
                 # Iterate over data.
                 for inputs, labels in test_dataloader:
-                    running_loss = 0.0
-                    running_corrects = 0
-                    train_dataset_size = len(labels)
                     inputs = inputs.to(device)
                     if cat_dog:
                         labels = gen_cat_dog_label(cat_dog_dict, labels)
                     labels = labels.to(device)
                     outputs = model(inputs)
-                    _, preds = torch.max(outputs, dim=1)
+                    preds = torch.argmax(outputs, dim=1, keepdim=True)
                     running_loss += loss.item()
-                    running_corrects += torch.sum(preds == labels.data)
+                    running_corrects += torch.sum(preds.T == labels.data)
                 epoch_loss = running_loss / val_dataset_size
                 epoch_acc = running_corrects.double() / val_dataset_size
 

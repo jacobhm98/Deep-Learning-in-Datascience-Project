@@ -18,7 +18,7 @@ def main():
     train_data, val_data = data_utils.train_val_split(train_data)
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
-    cat_dog_dict = create_cat_dog_dict()
+    cat_dog_dict = data_utils.create_cat_dog_dict()
 
     # use GPU if available else use CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

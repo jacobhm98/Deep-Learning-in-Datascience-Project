@@ -1,7 +1,4 @@
 import os
-import shutil
-from pathlib import Path
-
 import torch
 import numpy as np
 
@@ -33,14 +30,19 @@ def gen_cat_dog_label(cat_dog_dict, labels):
     '''
     cat_dog_labels = []
     for i in labels:
-        if i in cat_dog_dict['cat']:
+        if str(i.item() + 1) in cat_dog_dict['cat']:
             cat_dog_labels.append(0)
-        else:
+        elif str(i.item() + 1) in cat_dog_dict['dog']:
             cat_dog_labels.append(1)
+        else:
+            print(i.item())
+            raise ValueError
 
     return torch.LongTensor(cat_dog_labels)
 
+
 from torchvision.utils import save_image
+
 
 def output_jpg_dir_of_training_data(output_path):
     os.mkdir(output_path)
@@ -49,7 +51,7 @@ def output_jpg_dir_of_training_data(output_path):
         save_image(image, os.path.join(output_path, f"image-{label}-{i}.jpg"))
 
 
-def download_dataset(batch_size):
+def download_dataset():
     '''
     Parameters:
     batch_size: Batch size (needed in dataloader)
@@ -66,3 +68,29 @@ def download_dataset(batch_size):
 
     return training_data, test_data
 
+
+# note that in the data/annotations/list.txt has filename | 1:37 Class ids | 1:Cat 2:Dog | 1-25:Cat 1:12:Dog
+# so function given an id get whether cat or dog,
+# creating a dictionary with {'cat':[list of ids], 'dog':[list of ids]}, computed in the beginning first and then retrive later.
+def create_cat_dog_dict():
+    '''
+    Returns:
+    {'cat':[list of ids], 'dog':[list of ids]}
+    '''
+    cat_list = []
+    dog_list = []
+    list_file_path = "data/oxford-iiit-pet/annotations/list.txt"
+    a_file = open(list_file_path)
+    lines = a_file.readlines()[6:]
+    for line in lines:
+        id = line.rstrip().split()[1]
+        if id in cat_list or id in dog_list:
+            continue
+        cat_dog = line.rstrip().split()[2]
+        if cat_dog == '1':
+            cat_list.append(id)
+        else:
+            dog_list.append(id)
+    a_file.close()
+    cat_dog_dict = {"cat": cat_list, "dog": dog_list}
+    return cat_dog_dict
