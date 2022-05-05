@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from project import create_cat_dog_dict, get_dataloaders, download_model, \
+from nn_lib import create_cat_dog_dict, get_dataloaders, download_model, \
     modify_model, train_model
 
 

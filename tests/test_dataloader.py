@@ -1,6 +1,6 @@
 import unittest
 
-from project import download_dataset
+from nn_lib import download_dataset
 
 
 class MyTestCase(unittest.TestCase):
