@@ -30,12 +30,13 @@ def create_cat_dog_dict():
         if id in cat_lis or id in dog_lis:
             continue
         cat_dog = line.rstrip().split()[2]
-        if(cat_dog == 1):
+        if(cat_dog == '1'):
             cat_lis.append(id)
         else:
             dog_lis.append(id)
     a_file.close()
     cat_dog_dict = {"cat":cat_lis, "dog":dog_lis}
+    print(cat_dog_dict)
     return cat_dog_dict
     
 def download_model(model_name, freeze, pretrained):
@@ -71,13 +72,7 @@ def download_dataset(batch_size):
     training_data = datasets.OxfordIIITPet(root = "data",split = "trainval",download =True, transform = transform)
     test_data = datasets.OxfordIIITPet(root = "data",split = "test", download =True, transform = transform)
 
-    train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
-    
-    example = iter(train_dataloader)
-    sample, label = example.next()
-    print(sample.shape, label.shape)
-    return training_data,test_data, train_dataloader, test_dataloader
+    return training_data,test_data
 
 def modify_model(model, n_classes):
     '''
@@ -109,7 +104,7 @@ def gen_cat_dog_label(cat_dog_dict, labels):
     
     return torch.LongTensor(cat_dog_labels)
 
-def train_model(model, train_dataloader, test_dataloader, loss_fxn, optimizer, no_epoches, device, batch_size, cat_dog_dict, cat_dog = True):
+def train_model(model, train_data, test_data, loss_fxn, optimizer, no_epoches, device, batch_size, cat_dog_dict, cat_dog = True):
     '''
     Parameters:
     cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
@@ -117,15 +112,19 @@ def train_model(model, train_dataloader, test_dataloader, loss_fxn, optimizer, n
     Return:
     Trained model
     '''
+    dataset_size = len(train_data)
+
+    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     for _ in tqdm(range(no_epoches)):
         for phase in ['train', 'val']:
             if phase == 'train':
                 model.train()  # Set model to training mode
-                running_loss = 0.0
-                running_corrects = 0
                 for inputs, labels in train_dataloader:
+                    running_loss = 0.0
+                    running_corrects = 0
                     inputs = inputs.to(device)
                     labels = labels.to(device)
                     if cat_dog:
@@ -141,18 +140,19 @@ def train_model(model, train_dataloader, test_dataloader, loss_fxn, optimizer, n
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
 
-                    epoch_loss = running_loss / dataset_size
-                    epoch_acc = running_corrects.double() / dataset_size
+                epoch_loss = running_loss / dataset_size
+                epoch_acc = running_corrects.double() / dataset_size
 
-                    print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                         phase, epoch_loss, epoch_acc))
             else:
                 model.eval()   # Set model to evaluate mode
-                running_loss = 0.0
-                running_corrects = 0
+
 
                 # Iterate over data.
                 for inputs, labels in test_dataloader:
+                    running_loss = 0.0
+                    running_corrects = 0
                     dataset_size = len(labels)
                     inputs = inputs.to(device)
                     labels = labels.to(device)
@@ -185,7 +185,7 @@ def main():
     model_name = 'resnet18'
 
     # download the train and test dataset and create batches for train and test dataset
-    train_data, test_data, train_dataloader, test_dataloader = download_dataset(batch_size)
+    train_data, test_data= download_dataset(batch_size)
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
     cat_dog_dict = create_cat_dog_dict()
@@ -201,7 +201,7 @@ def main():
     cat_dog_resnet_model = modify_model(resnet_model,no_classes)
 
     optimizer = optim.SGD(cat_dog_resnet_model.parameters(), lr = lr)
-    trained_model = train_model(cat_dog_resnet_model, train_dataloader, test_dataloader, loss_fxn, optimizer, no_epoches, device, batch_size, cat_dog_dict)
+    trained_model = train_model(cat_dog_resnet_model, train_data, test_data, loss_fxn, optimizer, no_epoches, device, batch_size, cat_dog_dict)
     print("Model trained!!")
 
 
