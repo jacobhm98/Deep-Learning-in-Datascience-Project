@@ -1,7 +1,5 @@
 import torch
 from torch.utils.data import DataLoader, Dataset
-from torchvision import datasets
-from torchvision import transforms
 from data_utils import gen_cat_dog_label
 # from torchvision.transforms import ToTensor
 import torch.nn as nn
@@ -54,24 +52,6 @@ def download_model(model_name, freeze, pretrained):
             param.requires_grad = False
         print("All the layers won't be trained, except the last layer")
     return model
-
-
-def download_dataset(batch_size):
-    '''
-    Parameters:
-    batch_size: Batch size (needed in dataloader)
-    Returns:
-    train and test OxfordIIITPet dataset
-    '''
-    img_size = 255
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((img_size, img_size))
-    ])
-    training_data = datasets.OxfordIIITPet(root="data", split="trainval", download=True, transform=transform)
-    test_data = datasets.OxfordIIITPet(root="data", split="test", download=True, transform=transform)
-
-    return training_data, test_data
 
 
 def modify_model(model, n_classes):

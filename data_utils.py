@@ -1,5 +1,12 @@
+import os
+import shutil
+from pathlib import Path
+
 import torch
 import numpy as np
+
+from torchvision import datasets
+from torchvision import transforms
 
 
 def seed_everything(seed=0):
@@ -32,3 +39,30 @@ def gen_cat_dog_label(cat_dog_dict, labels):
             cat_dog_labels.append(1)
 
     return torch.LongTensor(cat_dog_labels)
+
+from torchvision.utils import save_image
+
+def output_jpg_dir_of_training_data(output_path):
+    os.mkdir(output_path)
+    train_ds, test_ds = download_dataset(0)
+    for i, (image, label) in enumerate(train_ds):
+        save_image(image, os.path.join(output_path, f"image-{label}-{i}.jpg"))
+
+
+def download_dataset(batch_size):
+    '''
+    Parameters:
+    batch_size: Batch size (needed in dataloader)
+    Returns:
+    train and test OxfordIIITPet dataset
+    '''
+    img_size = 255
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((img_size, img_size))
+    ])
+    training_data = datasets.OxfordIIITPet(root="data", split="trainval", download=True, transform=transform)
+    test_data = datasets.OxfordIIITPet(root="data", split="test", download=True, transform=transform)
+
+    return training_data, test_data
+
