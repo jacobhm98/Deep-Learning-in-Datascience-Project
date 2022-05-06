@@ -4,7 +4,8 @@ import numpy as np
 
 from torchvision import datasets
 from torchvision import transforms
-
+from timm.data.transforms_factory import create_transform 
+from torchvision.utils import save_image
 
 def seed_everything(seed=0):
     np.random.seed(seed)
@@ -41,8 +42,6 @@ def gen_cat_dog_label(cat_dog_dict, labels):
     return torch.LongTensor(cat_dog_labels)
 
 
-from torchvision.utils import save_image
-
 
 def output_jpg_dir_of_training_data(output_path):
     os.mkdir(output_path)
@@ -51,15 +50,19 @@ def output_jpg_dir_of_training_data(output_path):
         save_image(image, os.path.join(output_path, f"image-{label}-{i}.jpg"))
 
 
-def download_dataset():
+def download_dataset(augumentation = False):
     '''
     Parameters:
-    batch_size: Batch size (needed in dataloader)
+    augumentation : do you to perform data augumentation like cropping etc.., set to true  
+
     Returns:
     train and test OxfordIIITPet dataset
     '''
     img_size = 255
-    transform = transforms.Compose([
+    if augumentation:
+        transform = create_transform(img_size, is_training = True)
+    else:
+        transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Resize((img_size, img_size))
     ])
