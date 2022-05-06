@@ -31,6 +31,7 @@ def main():
 
     trained_model = train_model(cat_dog_resnet_model, train_data, val_data, loss_fxn, optimizer, no_epochs, device,
                                 batch_size, cat_dog_dict)
+    #TODO this save statemnt doesnt currently work
     torch.save(trained_model, "models/trained_model.model")
     print("Model trained!!")
 
