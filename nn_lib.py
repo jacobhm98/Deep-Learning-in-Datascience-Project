@@ -1,31 +1,57 @@
+import imp
 import torch
 from torch.utils.data import DataLoader, Dataset
 from data_utils import gen_cat_dog_label
 # from torchvision.transforms import ToTensor
 import torch.nn as nn
+from torch.optim import Adam
 from tqdm import tqdm
 import copy
 
 
+def is_layer_frozen(layer : nn.Module):
+    return all([x.requires_grad == True for x in layer.parameters()])
 
-
-def download_model(model_name, freeze, pretrained):
+def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer, n_classes):
     '''
     Parameters:
     model_name : string -  name of the model
-    freeze : Boolean value- should we freeze all the other layers in the model to prevent them from getting trained
     pretrained : Boolean value- should we use a pretrained model or not
+    n_layers_to_train : number of trainable layers
+    n_classes :
 
     Returns:
     Resnet-18 model
     '''
     model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=pretrained)
     print("Resnet downloaded")
-    if freeze:
-        for param in model.parameters():
+    parameter_groups = []
+
+    assert n_layers_to_train>=0 and n_layers_to_train<4
+    n_layers_to_freeze = 4 - n_layers_to_train + 1
+    for i in range(n_layers_to_freeze):
+        layer = model.__getattr__(f"layer{i+1}")
+        for param in layer.parameters():
             param.requires_grad = False
-        print("All the layers won't be trained, except the last layer")
-    return model
+
+    
+    for i in range(n_layers_to_train - 1):
+        layer = model.__getattr__(f"layer{4 - i}") 
+        parameter_groups.append(
+            {'params' : layer.parameters(), 'lr' : lr_per_layer[i]}
+        )
+    
+    print("Frozen ", 5-n_layers_to_train, "layers")
+    in_features = model.fc.in_features
+    model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
+    parameter_groups.append(
+            {'params' : model.fc.parameters(), 'lr' : lr_per_layer[-1]}
+        )
+
+    optimizer = Adam(parameter_groups)
+
+
+    return model, optimizer
 
 
 def modify_model(model, n_classes):
@@ -37,9 +63,7 @@ def modify_model(model, n_classes):
     Returns:
     model with final layer added.
     '''
-    in_features = model.fc.in_features
-    model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
-    return model
+    
 
 
 def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
@@ -58,7 +82,8 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     test_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
-    for _ in tqdm(range(no_epochs)):
+    progress_bar = tqdm(range(no_epochs))
+    for _ in progress_bar:
         for phase in ['train', 'val']:
             if phase == 'train':
                 running_loss = 0.0
@@ -69,14 +94,15 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                     labels = labels.to(device)
                     if cat_dog:
                         labels = gen_cat_dog_label(cat_dog_dict, labels)
-                    with torch.set_grad_enabled(True):
-                        outputs = model(inputs)
-                        preds = torch.argmax(outputs, 1, keepdim=True)
-                        loss = loss_fxn(outputs, labels)
-                        optimizer.zero_grad()
-                        loss.backward()
-                        optimizer.step()
+                    # with torch.set_grad_enabled(True):
+                    outputs = model(inputs)
+                    preds = torch.argmax(outputs, 1, keepdim=True)
+                    loss = loss_fxn(outputs, labels)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
                     running_loss += loss.item()
+                    progress_bar.set_postfix_str(loss.item())
                     running_corrects += torch.sum(preds.T == labels.data)
 
                 epoch_loss = running_loss / train_dataset_size

@@ -26,11 +26,9 @@ def main():
     # Download the pretrained model, where you can either freeze the
     # previous layers or fine tune the whole network,
     # by setting the freeze variable
-    resnet_model = download_model(model_name, freeze=True, pretrained=True)
-    # added a last layer to the network
-    cat_dog_resnet_model = modify_model(resnet_model, no_classes)
+    cat_dog_resnet_model, optimizer = download_model(model_name, 1, True, [0.001], no_classes)
 
-    optimizer = optim.SGD(cat_dog_resnet_model.parameters(), lr=lr)
+
     trained_model = train_model(cat_dog_resnet_model, train_data, val_data, loss_fxn, optimizer, no_epochs, device,
                                 batch_size, cat_dog_dict)
     torch.save(trained_model, "models/trained_model.model")
