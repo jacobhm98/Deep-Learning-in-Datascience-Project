@@ -29,7 +29,7 @@ def main():
     cat_dog_resnet_model, optimizer = download_model(model_name, 1, True, [0.001], no_classes)
 
 
-    trained_model = train_model(cat_dog_resnet_model, train_data, val_data, loss_fxn, optimizer, no_epochs, device,
+    trained_model, train_acc_arr,train_loss_arr, val_acc_arr, val_loss_arr = train_model(cat_dog_resnet_model, train_data, val_data, loss_fxn, optimizer, no_epochs, device,
                                 batch_size, cat_dog_dict)
     #TODO this save statemnt doesnt currently work
     torch.save(trained_model, "models/trained_model.model")

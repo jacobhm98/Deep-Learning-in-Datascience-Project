@@ -73,7 +73,7 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
     cat_dog : True if we want to classify into two classes.
     Return:
-    Trained model
+    Trained model, loss_arr, acc_arr
     '''
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
@@ -82,6 +82,10 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     test_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
+    train_loss_arr = []
+    val_loss_arr = []
+    train_acc_arr = []
+    val_acc_arr = []
     progress_bar = tqdm(range(no_epochs))
     for _ in progress_bar:
         for phase in ['train', 'val']:
@@ -107,6 +111,8 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
 
                 epoch_loss = running_loss / train_dataset_size
                 epoch_acc = running_corrects.double() / train_dataset_size
+                train_acc_arr.append(epoch_acc)
+                train_loss_arr.append(epoch_loss)
 
                 print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                     phase, epoch_loss, epoch_acc))
@@ -128,6 +134,8 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                 epoch_loss = running_loss / val_dataset_size
                 epoch_acc = running_corrects.double() / val_dataset_size
 
+                val_acc_arr.append(epoch_acc)
+                val_loss_arr.append(epoch_loss)
                 print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                     phase, epoch_loss, epoch_acc))
                 if phase == 'val' and epoch_acc > best_acc:
@@ -137,4 +145,4 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-    return model
+    return model, train_acc_arr,train_loss_arr, val_acc_arr, val_loss_arr
