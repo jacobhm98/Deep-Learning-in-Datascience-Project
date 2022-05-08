@@ -44,6 +44,7 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer, n_cl
     print("Frozen ", 5-n_layers_to_train, "layers")
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
+    # Add final layer and input layer
     parameter_groups.append(
             {'params' : model.fc.parameters(), 'lr' : lr_per_layer[-1]}
         )
@@ -75,6 +76,8 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     Return:
     Trained model, loss_arr, acc_arr
     '''
+
+    model.to(device)
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
 
