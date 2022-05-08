@@ -1,4 +1,6 @@
 import os
+from collections import defaultdict
+
 import torch
 import numpy as np
 
@@ -6,6 +8,28 @@ from torchvision import datasets
 from torchvision import transforms
 from timm.data.transforms_factory import create_transform 
 from torchvision.utils import save_image
+import matplotlib.pyplot as plt
+
+def print_dataset_summary(dataset):
+    """
+    Print statistics about the label distributions on given
+    pytorch dataset
+    :param dataset: A pytorch dataset
+    """
+    label2count = defaultdict(lambda : 0)
+    total = 0
+    for datapoint in dataset:
+        label2count[datapoint[1]] += 1
+        total += 1
+    print("=========Dataset summary=========")
+    for label, count_i in label2count.items():
+        print(f"Label {label}, count {count_i}, "
+              f"percentage {count_i / total}")
+
+
+def plot_dataset_image(dataset , index):
+    plt.imshow(dataset[index][0].transpose(0, 2).transpose(0, 1))
+    plt.show()
 
 def seed_everything(seed=0):
     np.random.seed(seed)
