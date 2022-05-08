@@ -5,7 +5,7 @@ from data_utils import gen_cat_dog_label
 # from torchvision.transforms import ToTensor
 import torch.nn as nn
 from torch.optim import Adam
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import copy
 
 
