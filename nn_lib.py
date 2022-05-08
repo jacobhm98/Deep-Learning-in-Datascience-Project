@@ -12,20 +12,27 @@ import copy
 def is_layer_frozen(layer : nn.Module):
     return all([x.requires_grad == True for x in layer.parameters()])
 
-def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer, n_classes):
+def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
+                   n_classes, fine_tune_batch_norm=False):
     '''
     Parameters:
     model_name : string -  name of the model
     pretrained : Boolean value- should we use a pretrained model or not
     n_layers_to_train : number of trainable layers
     n_classes :
-
+    fine_tune_batch_norm: True if the batch norm layer parameters are to be
+    tuned
     Returns:
     Resnet-18 model
     '''
     model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=pretrained)
     print("Resnet downloaded")
     parameter_groups = []
+
+    # Freeze the first layers
+    model.conv1.weight.requires_grad = False
+    model.bn1.weight.requires_grad = False
+    model.bn1.bias.requires_grad = False
 
     assert n_layers_to_train>=0 and n_layers_to_train<4
     n_layers_to_freeze = 4 - n_layers_to_train + 1
@@ -40,7 +47,12 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer, n_cl
         parameter_groups.append(
             {'params' : layer.parameters(), 'lr' : lr_per_layer[i]}
         )
-    
+
+    # Dealing with batch norm parameters
+    if not fine_tune_batch_norm:
+        for name, param in model.named_parameters():
+            if "bn" in name:
+                param.requires_grad = False
     print("Frozen ", 5-n_layers_to_train, "layers")
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
@@ -51,8 +63,14 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer, n_cl
 
     optimizer = Adam(parameter_groups)
 
-
+    print("Final config")
+    print_model_parameter_summary(model)
     return model, optimizer
+
+
+def print_model_parameter_summary(model):
+    for name, param in model.named_parameters():
+        print(name, param.size(), param.requires_grad)
 
 
 def modify_model(model, n_classes):
@@ -98,9 +116,10 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                 model.train()  # Set model to training mode
                 for inputs, labels in train_dataloader:
                     inputs = inputs.to(device)
-                    labels = labels.to(device)
                     if cat_dog:
                         labels = gen_cat_dog_label(cat_dog_dict, labels)
+
+                    labels = labels.to(device)
                     # with torch.set_grad_enabled(True):
                     outputs = model(inputs)
                     preds = torch.argmax(outputs, 1, keepdim=True)
