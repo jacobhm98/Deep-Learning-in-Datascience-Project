@@ -62,9 +62,6 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
         )
 
     optimizer = Adam(parameter_groups)
-
-    print("Final config")
-    print_model_parameter_summary(model)
     return model, optimizer
 
 
@@ -114,7 +111,7 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                 running_loss = 0.0
                 running_corrects = 0
                 model.train()  # Set model to training mode
-                for inputs, labels in train_dataloader:
+                for inputs, labels in tqdm(train_dataloader):
                     inputs = inputs.to(device)
                     if cat_dog:
                         labels = gen_cat_dog_label(cat_dog_dict, labels)
