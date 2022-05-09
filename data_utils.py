@@ -9,6 +9,7 @@ from torchvision import transforms
 from timm.data.transforms_factory import create_transform 
 from torchvision.utils import save_image
 import matplotlib.pyplot as plt
+from torch.utils.data.dataset import Dataset
 
 def print_dataset_summary(dataset):
     """
@@ -43,6 +44,47 @@ def train_val_split(train_dataset):
     train_size = int(0.9 * num_train_images)
     return torch.utils.data.random_split(train_dataset, lengths=[train_size,
                                                                  val_size])
+
+class CustomDataset(Dataset):
+    def __init__(self, idxlist, dataloader_):
+        self.idx_list = idxlist
+        self.dataloader = dataloader_
+
+    def __getitem__(self, idx: int):
+            return self.dataloader[self.idx_list[idx]]
+
+    def __len__(self):
+        return len(self.idx_list)
+
+def train_val_stratified_breed_split(train_dataloader):
+    seed_everything(0)
+    # input: trainval dataloader
+    # Taka 20 samples out of each class for validation
+    # use everything else for training
+    # returns: training and validation indices
+    j = 20
+    current_class=0
+    train_idx = []
+    validation_idx = []
+    idx = 0
+    for dat, lab in train_dataloader:
+
+        if j == 0:
+            current_class = current_class +1
+            j = 20
+        if lab == current_class and j!=0:
+            # validation_data.append(dat)
+            # validation_labels.append(lab)
+            validation_idx.append(idx)
+            j = j - 1
+        else:
+            # train_data.append(dat)
+            # train_labels.append(lab)
+            train_idx.append(idx)
+        idx = idx + 1
+
+    return CustomDataset(train_idx, train_dataloader), CustomDataset(
+        validation_idx, train_dataloader)
 
 def train_val_stratified_breed_split(train_dataloader):
     seed_everything(0)
