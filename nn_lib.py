@@ -7,6 +7,7 @@ import torch.nn as nn
 from torch.optim import Adam
 from tqdm.auto import tqdm
 import copy
+import pandas as pd
 
 
 def is_layer_frozen(layer : nn.Module):
@@ -83,7 +84,8 @@ def modify_model(model, n_classes):
 
 
 def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
-                cat_dog=True):
+                cat_dog=True, train_metrics_filename="train_metrics.csv",
+                val_metrics_filename="val_metrics.csv"):
     '''
     Parameters:
     cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
@@ -96,14 +98,19 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
 
-    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    test_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True)
+    train_dataloader = DataLoader(train_data, batch_size=batch_size,
+                                  shuffle=True, num_workers=8,
+                                  prefetch_factor=2)
+    test_dataloader = DataLoader(val_data, batch_size=batch_size,
+                                 shuffle=True,
+                                 num_workers=8, prefetch_factor=2)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
     val_loss_arr = []
     train_acc_arr = []
     val_acc_arr = []
+
     progress_bar = tqdm(range(no_epochs))
     for _ in progress_bar:
         for phase in ['train', 'val']:
@@ -121,20 +128,26 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                     outputs = model(inputs)
                     preds = torch.argmax(outputs, 1, keepdim=True)
                     loss = loss_fxn(outputs, labels)
+
+                    # Keep track of loss metric
+                    train_loss_arr.append(loss.item())
+
+                    # Do backward pass
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
+
                     running_loss += loss.item()
                     progress_bar.set_postfix_str(loss.item())
                     running_corrects += torch.sum(preds.T == labels.data)
 
+                # Accuracy loss
                 epoch_loss = running_loss / train_dataset_size
-                epoch_acc = running_corrects.double() / train_dataset_size
-                train_acc_arr.append(epoch_acc)
-                train_loss_arr.append(epoch_loss)
+                # epoch_acc = running_corrects.double() / train_dataset_size
+                # train_acc_arr.append(epoch_acc)
 
-                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                    phase, epoch_loss, epoch_acc))
+                print('{} Loss: {:.4f}'.format(
+                    phase, epoch_loss))
             else:
                 model.eval()  # Set model to evaluate mode
                 running_loss = 0.0
@@ -150,18 +163,32 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                     preds = torch.argmax(outputs, dim=1, keepdim=True)
                     running_loss += loss.item()
                     running_corrects += torch.sum(preds.T == labels.data)
+
+
                 epoch_loss = running_loss / val_dataset_size
                 epoch_acc = running_corrects.double() / val_dataset_size
 
-                val_acc_arr.append(epoch_acc)
+                val_acc_arr.append(epoch_acc.item())
                 val_loss_arr.append(epoch_loss)
                 print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                     phase, epoch_loss, epoch_acc))
                 if phase == 'val' and epoch_acc > best_acc:
                     best_acc = epoch_acc
                     best_model_wts = copy.deepcopy(model.state_dict())
+
+
     print('Best val Acc: {:4f}'.format(best_acc))
 
     # load best model weights
     model.load_state_dict(best_model_wts)
+    df_train = pd.DataFrame({
+        'train_loss': train_loss_arr,
+    })
+
+    df_val = pd.DataFrame({
+        'val_acc': val_acc_arr,
+        'val loss': val_loss_arr
+    })
+    df_train.to_csv("train_metrics.csv")
+    df_val.to_csv("val_metrics.csv")
     return model, train_acc_arr,train_loss_arr, val_acc_arr, val_loss_arr
