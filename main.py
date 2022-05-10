@@ -42,8 +42,14 @@ def main():
                                                                                               no_epochs, device,
                                                                                               batch_size,
                                                                                               cat_dog_dict)
+    else:
+        raise ValueError("no_classes needs to be either 2 or 37")
     torch.save(trained_model, "models/trained_model.model")
     print("Model trained!!")
+
+
+def investigate_effect_of_training_different_layers():
+
 
 
 if __name__ == '__main__':

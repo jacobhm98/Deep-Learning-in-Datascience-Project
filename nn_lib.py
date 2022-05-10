@@ -82,7 +82,7 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     Trained model, loss_arr, acc_arr
     '''
 
-    # If there is a cat dog dict then we wanna do classification on 2 species
+    # If there is a cat dog dict then we want to do classification on 2 species
     cat_dog = cat_dog_dict is not None
 
     model.to(device)
