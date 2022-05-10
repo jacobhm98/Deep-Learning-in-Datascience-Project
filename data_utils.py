@@ -46,17 +46,19 @@ def train_val_split(train_dataset):
                                                                  val_size])
 
 class CustomDataset(Dataset):
-    def __init__(self, idxlist, dataloader_):
+    def __init__(self, idxlist, dataloader_, transform):
         self.idx_list = idxlist
         self.dataloader = dataloader_
+        self.transform  = transform
 
     def __getitem__(self, idx: int):
-            return self.dataloader[self.idx_list[idx]]
+            val = self.dataloader[self.idx_list[idx]]
+            return self.transform(val[0]), val[1]
 
     def __len__(self):
         return len(self.idx_list)
 
-def train_val_stratified_breed_split(train_dataloader):
+def train_val_stratified_breed_split(train_dataloader, train_transform, test_transform):
     seed_everything(0)
     # input: trainval dataloader
     # Taka 20 samples out of each class for validation
@@ -83,8 +85,8 @@ def train_val_stratified_breed_split(train_dataloader):
             train_idx.append(idx)
         idx = idx + 1
 
-    return CustomDataset(train_idx, train_dataloader), CustomDataset(
-        validation_idx, train_dataloader)
+    return CustomDataset(train_idx, train_dataloader, train_transform), CustomDataset(
+        validation_idx, train_dataloader, test_transform)
 
 def gen_cat_dog_label(cat_dog_dict, labels):
     '''
@@ -135,10 +137,11 @@ def download_dataset(augmentation = False):
         transforms.ToTensor(),
         transforms.Resize((img_size, img_size))
     ])
-    training_data = datasets.OxfordIIITPet(root="data", split="trainval", download=True, transform=train_transform)
+    all_data = datasets.OxfordIIITPet(root="data", split="trainval", download=True)
+    train_data, val_data = train_val_stratified_breed_split(all_data, train_transform, test_transform)
     test_data = datasets.OxfordIIITPet(root="data", split="test", download=True, transform=test_transform)
 
-    return training_data, test_data
+    return train_data, val_data, test_data
 
 
 # note that in the data/annotations/list.txt has filename | 1:37 Class ids | 1:Cat 2:Dog | 1-25:Cat 1:12:Dog

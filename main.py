@@ -15,16 +15,15 @@ def main():
     cat_dog_dict = None
 
     # download the train and test dataset and create batches for train and test dataset
-    train_data, test_data = data_utils.download_dataset(augmentation = True)
-    train_data, val_data = data_utils.train_val_stratified_breed_split(train_data)
+    train_data, val_data, test_data = data_utils.download_dataset(augmentation = True)
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
     if no_classes == 2:
         cat_dog_dict = data_utils.create_cat_dog_dict()
 
     # use GPU if available else use CPU
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cuda"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = "cuda"
     # Download the pretrained model, where you can either freeze the
     # previous layers or fine tune the whole network,
     # by setting the freeze variable
