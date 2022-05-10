@@ -34,7 +34,8 @@ def main():
                                                                                               train_data, val_data,
                                                                                               loss_fxn, optimizer,
                                                                                               no_epochs, device,
-                                                                                              batch_size, cat_dog_dict)
+                                                                                              batch_size, cat_dog_dict,
+                                                                                              num_workers=6)
     elif no_classes == 37:
         trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model(model,
                                                                                               train_data, val_data,
