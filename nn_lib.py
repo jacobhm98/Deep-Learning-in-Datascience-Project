@@ -36,8 +36,8 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
     model.bn1.weight.requires_grad = False
     model.bn1.bias.requires_grad = False
 
-    assert n_layers_to_train >= 0 and n_layers_to_train < 4
-    n_layers_to_freeze = 4 - n_layers_to_train + 1
+    assert 0 < n_layers_to_train < 6
+    n_layers_to_freeze = 5 - n_layers_to_train
     for i in range(n_layers_to_freeze):
         layer = model.__getattr__(f"layer{i + 1}")
         for param in layer.parameters():
@@ -71,9 +71,8 @@ def print_model_parameter_summary(model):
         print(name, param.size(), param.requires_grad)
 
 
-
 def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
-                cat_dog=True, train_metrics_filename="train_metrics.csv",
+                train_metrics_filename="train_metrics.csv",
                 val_metrics_filename="val_metrics.csv"):
     '''
     Parameters:
@@ -92,9 +91,6 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=8,
                                   prefetch_factor=2)
-    test_dataloader = DataLoader(val_data, batch_size=batch_size,
-                                 shuffle=True,
-                                 num_workers=8, prefetch_factor=2)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
@@ -139,26 +135,11 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
 
                 print('{} Loss: {:.4f}'.format(
                     phase, epoch_loss))
-            else:
-                model.eval()  # Set model to evaluate mode
-                running_loss = 0.0
-                running_corrects = 0
 
-                # Iterate over data.
-                for inputs, labels in test_dataloader:
-                    inputs = inputs.to(device)
-                    if cat_dog:
-                        labels = gen_cat_dog_label(cat_dog_dict, labels)
-                    labels = labels.to(device)
-                    outputs = model(inputs)
-                    preds = torch.argmax(outputs, dim=1, keepdim=True)
-                    running_loss += loss.item()
-                    running_corrects += torch.sum(preds.T == labels.data)
+            elif phase == 'val':
+                epoch_loss, epoch_acc = test_loss_and_accuracy(val_data, model, loss_fxn, device, cat_dog_dict)
 
-
-                epoch_loss = running_loss / val_dataset_size
-                epoch_acc = running_corrects.double() / val_dataset_size
-
+                # Test accuracy and loss on validation set
                 val_acc_arr.append(epoch_acc.item())
                 val_loss_arr.append(epoch_loss)
                 print('{} Loss: {:.4f} Acc: {:.4f}'.format(
@@ -166,7 +147,6 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                 if phase == 'val' and epoch_acc > best_acc:
                     best_acc = epoch_acc
                     best_model_wts = copy.deepcopy(model.state_dict())
-
 
     print('Best val Acc: {:4f}'.format(best_acc))
 
@@ -182,4 +162,29 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     })
     df_train.to_csv(train_metrics_filename)
     df_val.to_csv(val_metrics_filename)
-    return model, train_acc_arr,train_loss_arr, val_acc_arr, val_loss_arr
+    return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
+
+
+def test_loss_and_accuracy(dataset, model, loss_fxn, device, cat_dog_dict=None):
+    cat_dog = cat_dog_dict is not None
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=8, prefetch_factor=2)
+    dataset_size = len(dataset)
+    model.eval()  # Set model to evaluate mode
+    running_loss = 0.0
+    running_corrects = 0
+
+    # Iterate over data.
+    for inputs, labels in dataloader:
+        inputs = inputs.to(device)
+        if cat_dog:
+            labels = gen_cat_dog_label(cat_dog_dict, labels)
+        labels = labels.to(device)
+        outputs = model(inputs)
+        preds = torch.argmax(outputs, dim=1, keepdim=True)
+        loss = loss_fxn(outputs, labels)
+        running_loss += loss.item()
+        running_corrects += torch.sum(preds.T == labels.data)
+
+    epoch_loss = running_loss / dataset_size
+    epoch_acc = running_corrects.double() / dataset_size
+    return epoch_loss, epoch_acc
