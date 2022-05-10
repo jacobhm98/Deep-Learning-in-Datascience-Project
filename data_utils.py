@@ -134,6 +134,7 @@ def download_dataset(augmentation = False):
     test_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Resize((img_size, img_size))
+    ])
     training_data = datasets.OxfordIIITPet(root="data", split="trainval", download=True, transform=train_transform)
     test_data = datasets.OxfordIIITPet(root="data", split="test", download=True, transform=test_transform)
 
