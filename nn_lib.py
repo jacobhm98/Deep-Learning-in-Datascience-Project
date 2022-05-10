@@ -169,9 +169,14 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
 
 
-def test_loss_and_accuracy(dataset, model, loss_fxn, device, cat_dog_dict=None):
+def test_loss_and_accuracy(dataset, model, loss_fxn, device,
+                           cat_dog_dict=None,
+                           num_workers=2,
+                           prefetch_factor=2
+                           ):
     cat_dog = cat_dog_dict is not None
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=8, prefetch_factor=2)
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True,
+                            num_workers=num_workers, prefetch_factor=prefetch_factor)
     dataset_size = len(dataset)
     model.eval()  # Set model to evaluate mode
     running_loss = 0.0
