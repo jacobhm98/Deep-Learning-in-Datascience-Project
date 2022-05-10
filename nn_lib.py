@@ -93,8 +93,6 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                                   shuffle=True, num_workers=num_workers,
                                   prefetch_factor=prefetch_factor)
 
-    test_dataloader = DataLoader(val_data, batch_size=batch_size,
-                                 num_workers=8, prefetch_factor=2)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
@@ -141,7 +139,15 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
                     phase, epoch_loss))
 
             elif phase == 'val':
-                epoch_loss, epoch_acc = test_loss_and_accuracy(val_data, model, loss_fxn, device, cat_dog_dict)
+                epoch_loss, epoch_acc = test_loss_and_accuracy(
+                    val_data,
+                    model,
+                    loss_fxn,
+                    device,
+                    cat_dog_dict,
+                    num_workers=num_workers,
+                    prefetch_factor=prefetch_factor
+                )
 
                 # Test accuracy and loss on validation set
                 val_acc_arr.append(epoch_acc.item())
