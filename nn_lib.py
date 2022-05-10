@@ -72,8 +72,8 @@ def print_model_parameter_summary(model):
 
 
 def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
-                train_metrics_filename="train_metrics.csv",
-                val_metrics_filename="val_metrics.csv"):
+                train_metrics_filename="results/train_metrics.csv",
+                val_metrics_filename="results/val_metrics.csv"):
     '''
     Parameters:
     cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
