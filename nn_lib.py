@@ -74,7 +74,8 @@ def print_model_parameter_summary(model):
 
 def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
                 cat_dog=True, train_metrics_filename="train_metrics.csv",
-                val_metrics_filename="val_metrics.csv"):
+                val_metrics_filename="val_metrics.csv", num_workers=2,
+                prefetch_factor=2):
     '''
     Parameters:
     cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
@@ -90,10 +91,10 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     val_dataset_size = len(val_data)
 
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
-                                  shuffle=True, num_workers=8,
-                                  prefetch_factor=2)
+                                  shuffle=True, num_workers=num_workers,
+                                  prefetch_factor=prefetch_factor)
+
     test_dataloader = DataLoader(val_data, batch_size=batch_size,
-                                 shuffle=True,
                                  num_workers=8, prefetch_factor=2)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
