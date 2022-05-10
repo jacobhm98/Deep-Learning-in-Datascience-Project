@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from typing import List
 
 import torch
 import numpy as np
@@ -117,7 +118,7 @@ def output_jpg_dir_of_training_data(output_path):
         save_image(image, os.path.join(output_path, f"image-{label}-{i}.jpg"))
 
 
-def download_dataset(augmentation = False):
+def download_dataset(augmentation = False, in_memory=False):
     '''
     Parameters:
     augumentation : do you to perform data augumentation like cropping etc.., set to true  
@@ -137,11 +138,31 @@ def download_dataset(augmentation = False):
         transforms.ToTensor(),
         transforms.Resize((img_size, img_size))
     ])
-    all_data = datasets.OxfordIIITPet(root="data", split="trainval", download=True)
-    train_data, val_data = train_val_stratified_breed_split(all_data, train_transform, test_transform)
+    all_data =  datasets.OxfordIIITPet(root="data", split="trainval",
+                                       download=True)
+
     test_data = datasets.OxfordIIITPet(root="data", split="test", download=True, transform=test_transform)
 
+    if in_memory:
+        print("Inmemorizing...")
+        all_data = inmemorize_dataset(all_data)
+        test_data = inmemorize_dataset(test_data)
+
+    train_data, val_data = train_val_stratified_breed_split(all_data, train_transform, test_transform)
+
     return train_data, val_data, test_data
+
+class ListDataset():
+    def __init__(self, l : List):
+        self.l = l
+    def __getitem__(self, item):
+        return self.l[item]
+    def __len__(self):
+        return len(self.l)
+
+def inmemorize_dataset(dataset):
+    examples = [dataset[i] for i in range(len(dataset))]
+    return ListDataset(examples)
 
 
 # note that in the data/annotations/list.txt has filename | 1:37 Class ids | 1:Cat 2:Dog | 1-25:Cat 1:12:Dog
