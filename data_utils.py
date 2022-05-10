@@ -141,7 +141,7 @@ def output_jpg_dir_of_training_data(output_path):
         save_image(image, os.path.join(output_path, f"image-{label}-{i}.jpg"))
 
 
-def download_dataset(augumentation = False):
+def download_dataset(augmentation = False):
     '''
     Parameters:
     augumentation : do you to perform data augumentation like cropping etc.., set to true  
@@ -150,7 +150,7 @@ def download_dataset(augumentation = False):
     train and test OxfordIIITPet dataset
     '''
     img_size = 255
-    if augumentation:
+    if augmentation:
         transform = create_transform(img_size, is_training = True)
     else:
         transform = transforms.Compose([

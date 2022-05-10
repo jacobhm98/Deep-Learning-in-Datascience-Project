@@ -9,8 +9,9 @@ from tqdm.auto import tqdm
 import copy
 
 
-def is_layer_frozen(layer : nn.Module):
+def is_layer_frozen(layer: nn.Module):
     return all([x.requires_grad == True for x in layer.parameters()])
+
 
 def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
                    n_classes, fine_tune_batch_norm=False):
@@ -34,18 +35,17 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
     model.bn1.weight.requires_grad = False
     model.bn1.bias.requires_grad = False
 
-    assert n_layers_to_train>=0 and n_layers_to_train<4
+    assert n_layers_to_train >= 0 and n_layers_to_train < 4
     n_layers_to_freeze = 4 - n_layers_to_train + 1
     for i in range(n_layers_to_freeze):
-        layer = model.__getattr__(f"layer{i+1}")
+        layer = model.__getattr__(f"layer{i + 1}")
         for param in layer.parameters():
             param.requires_grad = False
 
-    
     for i in range(n_layers_to_train - 1):
-        layer = model.__getattr__(f"layer{4 - i}") 
+        layer = model.__getattr__(f"layer{4 - i}")
         parameter_groups.append(
-            {'params' : layer.parameters(), 'lr' : lr_per_layer[i]}
+            {'params': layer.parameters(), 'lr': lr_per_layer[i]}
         )
 
     # Dealing with batch norm parameters
@@ -53,13 +53,13 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
         for name, param in model.named_parameters():
             if "bn" in name:
                 param.requires_grad = False
-    print("Frozen ", 5-n_layers_to_train, "layers")
+    print("Frozen ", 5 - n_layers_to_train, "layers")
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
     # Add final layer and input layer
     parameter_groups.append(
-            {'params' : model.fc.parameters(), 'lr' : lr_per_layer[-1]}
-        )
+        {'params': model.fc.parameters(), 'lr': lr_per_layer[-1]}
+    )
 
     optimizer = Adam(parameter_groups)
     return model, optimizer
@@ -70,27 +70,16 @@ def print_model_parameter_summary(model):
         print(name, param.size(), param.requires_grad)
 
 
-def modify_model(model, n_classes):
-    '''
-    Parameters:
-    model: resnet_model
-    n_classes: number of labels for the dataset/ number of nodes in the last layer of the NN.
-
-    Returns:
-    model with final layer added.
-    '''
-    
-
-
-def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
-                cat_dog=True):
+def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict):
     '''
     Parameters:
     cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
-    cat_dog : True if we want to classify into two classes.
     Return:
     Trained model, loss_arr, acc_arr
     '''
+
+    # If there is a cat dog dict then we wanna do classification on 2 species
+    cat_dog = cat_dog_dict is not None
 
     model.to(device)
     train_dataset_size = len(train_data)
@@ -164,4 +153,4 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-    return model, train_acc_arr,train_loss_arr, val_acc_arr, val_loss_arr
+    return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
