@@ -180,6 +180,6 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
         'val_acc': val_acc_arr,
         'val loss': val_loss_arr
     })
-    df_train.to_csv("train_metrics.csv")
-    df_val.to_csv("val_metrics.csv")
+    df_train.to_csv(train_metrics_filename)
+    df_val.to_csv(val_metrics_filename)
     return model, train_acc_arr,train_loss_arr, val_acc_arr, val_loss_arr
