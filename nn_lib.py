@@ -15,7 +15,7 @@ def is_layer_frozen(layer: nn.Module):
 
 
 def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
-                   n_classes, fine_tune_batch_norm=False):
+                   n_classes, fine_tune_batch_norm=True):
     '''
     Parameters:
     model_name : string -  name of the model
