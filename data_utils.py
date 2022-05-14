@@ -129,15 +129,14 @@ def download_dataset(augmentation = False, in_memory=False):
     img_size = 255
     if augmentation:
         train_transform = create_transform(img_size, is_training = True)
+        test_transform = create_transform(img_size, is_training=False)
     else:
         train_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Resize((img_size, img_size))
-    ])
-    test_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((img_size, img_size))
-    ])
+        ])
+        test_transform = train_transform
+
     all_data =  datasets.OxfordIIITPet(root="data", split="trainval",
                                        download=True)
 

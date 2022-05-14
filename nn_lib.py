@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader, Dataset
 from data_utils import gen_cat_dog_label
 # from torchvision.transforms import ToTensor
 import torch.nn as nn
-from torch.optim import Adam
+from torch.optim import Adam, AdamW
 from tqdm.auto import tqdm
 import copy
 import pandas as pd
@@ -62,7 +62,7 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
         {'params': model.fc.parameters(), 'lr': lr_per_layer[-1]}
     )
 
-    optimizer = Adam(parameter_groups)
+    optimizer = AdamW(parameter_groups)
     return model, optimizer
 
 
@@ -187,18 +187,18 @@ def test_loss_and_accuracy(dataset, model, loss_fxn, device,
     model.eval()  # Set model to evaluate mode
     running_loss = 0.0
     running_corrects = 0
-
-    # Iterate over data.
-    for inputs, labels in dataloader:
-        inputs = inputs.to(device)
-        if cat_dog:
-            labels = gen_cat_dog_label(cat_dog_dict, labels)
-        labels = labels.to(device)
-        outputs = model(inputs)
-        preds = torch.argmax(outputs, dim=1, keepdim=True)
-        loss = loss_fxn(outputs, labels)
-        running_loss += loss.item()
-        running_corrects += torch.sum(preds.T == labels.data)
+    with torch.no_grad():
+        # Iterate over data.
+        for inputs, labels in dataloader:
+            inputs = inputs.to(device)
+            if cat_dog:
+                labels = gen_cat_dog_label(cat_dog_dict, labels)
+            labels = labels.to(device)
+            outputs = model(inputs)
+            preds = torch.argmax(outputs, dim=1, keepdim=True)
+            loss = loss_fxn(outputs, labels)
+            running_loss += loss.item()
+            running_corrects += torch.sum(preds.T == labels.data)
 
     epoch_loss = running_loss / dataset_size
     epoch_acc = running_corrects.double() / dataset_size
