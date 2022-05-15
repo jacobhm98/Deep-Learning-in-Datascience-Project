@@ -1,5 +1,6 @@
 import imp
 import torch
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, Dataset
 from data_utils import gen_cat_dog_label
 # from torchvision.transforms import ToTensor
@@ -183,22 +184,44 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
     print("Resnet downloaded")
     parameter_groups = []
 
-    # Freeze the first layers
-    model.conv1.weight.requires_grad = False
-    model.bn1.weight.requires_grad = False
-    model.bn1.bias.requires_grad = False
+    assert 1 <= n_layers_to_train <= 6
+    # List that maps the index of a layer to an iterable over its parameters
+    layer_i_to_parameters = []
+    layer_i_to_parameters.append([model.conv1.weight,
+                                  model.bn1.weight,
+                                  model.bn1.bias
+                                  ])
 
-    assert 0 < n_layers_to_train < 6
-    n_layers_to_freeze = 5 - n_layers_to_train
+    # Change final layer
+    in_features = model.fc.in_features
+    model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
+
+    # Freeze the first layers
+    resnet_layer_names = [k for k in model._modules if "layer" in k]
+    # layer1, layer2, ...., layern
+    resnet_layer_names = sorted(resnet_layer_names,
+                                key=lambda x:  int(x[5:]))
+    for layer_name in resnet_layer_names:
+        layer = model.__getattr__(layer_name)
+        layer_i_to_parameters.append(layer.parameters())
+
+    layer_i_to_parameters.append(model.fc.parameters())
+
+    assert 1 <= n_layers_to_train <= len(layer_i_to_parameters), \
+        f"Model {model_name} has {len(layer_i_to_parameters)} while " \
+        f"n_layers_to_train were {n_layers_to_train}"
+
+    # Freeze layers
+    n_layers_to_freeze = len(layer_i_to_parameters) - n_layers_to_train
     for i in range(n_layers_to_freeze):
-        layer = model.__getattr__(f"layer{i + 1}")
-        for param in layer.parameters():
+        for param in layer_i_to_parameters[i]:
             param.requires_grad = False
 
-    for i in range(n_layers_to_train - 1):
-        layer = model.__getattr__(f"layer{4 - i}")
+    # Assign trainable layers to parameter groups
+    for i in range(n_layers_to_train):
+        parameters = layer_i_to_parameters[-(i+1)]
         parameter_groups.append(
-            {'params': layer.parameters(), 'lr': lr_per_layer[i]}
+            {'params': parameters, 'lr': lr_per_layer[i]}
         )
 
     # Dealing with batch norm parameters
@@ -206,13 +229,6 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
         for name, param in model.named_parameters():
             if "bn" in name:
                 param.requires_grad = False
-    print("Frozen ", 5 - n_layers_to_train, "layers")
-    in_features = model.fc.in_features
-    model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
-    # Add final layer and input layer
-    parameter_groups.append(
-        {'params': model.fc.parameters(), 'lr': lr_per_layer[-1]}
-    )
 
     optimizer = AdamW(parameter_groups)
     return model, optimizer

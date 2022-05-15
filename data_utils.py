@@ -29,8 +29,19 @@ def print_dataset_summary(dataset):
               f"percentage {count_i / total}")
 
 
+def demo_transformations(dataset):
+    idxs = list(range(len(dataset)))
+    indexes = np.random.choice(idxs, size=3)
+    fig, axs = plt.subplots(3, 5)
+    for i in range(3):
+        for j in range(5):
+            axs[i][j].imshow(
+                dataset[indexes[i]][0].transpose(0, 2).transpose(0, 1)
+            )
+    plt.show()
+
 def plot_dataset_image(dataset , index):
-    plt.imshow(dataset[index][0].transpose(0, 2).transpose(0, 1))
+    plt.imshow()
     plt.show()
 
 def seed_everything(seed=0):
@@ -196,10 +207,7 @@ def download_dataset(augmentation=False, in_memory=False,
                                                             test_transform)
 
 
-
-    plot_dataset_image(train_data, 0)
-    plot_dataset_image(train_data, 5)
-    plot_dataset_image(train_data, 10)
+    demo_transformations(train_data)
 
     return train_data, val_data, test_data
 
