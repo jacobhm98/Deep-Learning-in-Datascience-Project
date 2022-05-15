@@ -184,15 +184,18 @@ def download_dataset(augmentation=False, in_memory=False,
 
     test_data = datasets.OxfordIIITPet(root="data", split="test",
                                        download=True, transform=test_transform)
-    print("Splitting to train, val, test")
-    train_data, val_data = train_val_stratified_breed_split(all_data,
-                                                            train_transform,
-                                                            test_transform)
 
     if in_memory:
         print("Inmemorizing...")
         all_data = inmemorize_dataset(all_data)
         test_data = inmemorize_dataset(test_data)
+
+    print("Splitting to train, val, test")
+    train_data, val_data = train_val_stratified_breed_split(all_data,
+                                                            train_transform,
+                                                            test_transform)
+
+
 
     plot_dataset_image(train_data, 0)
     plot_dataset_image(train_data, 5)

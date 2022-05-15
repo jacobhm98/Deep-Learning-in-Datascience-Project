@@ -1,3 +1,6 @@
+from torchvision import transforms
+
+from data_utils import print_dataset_summary
 from nn_lib import *
 import data_utils
 
@@ -26,7 +29,9 @@ def train_aug(aug, n_classes, filename):
     # Download the pretrained model, where you can either freeze the
     # previous layers or fine tune the whole network,
     # by setting the freeze variable
-    model, optimizer = download_model(model_name, 1, True, [0.001], no_classes)
+    n_layers_to_train = 3
+    model, optimizer = download_model(model_name, 3, True, [0.001] *n_layers_to_train,
+                                      no_classes)
 
     if no_classes == 2:
         trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model(model,
@@ -79,19 +84,30 @@ def main():
     no_classes = 37  # should be 2 or 37 for binary vs multi class
     # classification
     batch_size = 64
-    no_epochs = 2
-    lr = 0.001
+    no_epochs = 10
     loss_fxn = nn.CrossEntropyLoss()
     model_name = 'resnet18'
     cat_dog_dict = None
 
     # Set these according to your machine needs ( collab needs num_workers=2)
-    num_workers = 2
+    num_workers = 6
     prefetch_factor = 2
+
+    tfs = transforms.Compose([
+        #transforms.Resize((255,255)),
+        #transforms.ColorJitter(),
+        #transforms.GaussianBlur(kernel_size=[5,5]),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomPerspective(),
+        transforms.RandomRotation(45),
+        #transforms.RandomResizedCrop((255,255), scale=(0.7,0.7)),
+    ])
+
     # download the train and test dataset and create batches for train and test dataset
     train_data, val_data, test_data = data_utils.download_dataset(
         augmentation=True,
-        in_memory=False
+        in_memory=False,
+        train_transforms=tfs
     )
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
@@ -104,7 +120,8 @@ def main():
     # Download the pretrained model, where you can either freeze the
     # previous layers or fine tune the whole network,
     # by setting the freeze variable
-    model, optimizer = download_model(model_name, 1, True, [0.001], no_classes)
+    model, optimizer = download_model(model_name, 2, True, [1e-4]*2,
+                                      no_classes, fine_tune_batch_norm=True)
 
     if no_classes == 2 or no_classes == 37:
         trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model(

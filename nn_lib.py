@@ -237,8 +237,6 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     # If there is a cat dog dict then we want to do classification on 2 species
     cat_dog = cat_dog_dict is not None
 
-    model.train()  # Set model to training mode
-
     model.to(device)
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
@@ -255,9 +253,11 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     val_acc_arr = []
 
     progress_bar = tqdm(range(no_epochs))
-    for _ in progress_bar:
+    for epoch_i in progress_bar:
+        print("Epoch ", epoch_i)
         for phase in ['train', 'val']:
             if phase == 'train':
+                model.train()  # Set model to training mode
                 running_loss = 0.0
                 running_corrects = 0
                 for inputs, labels in tqdm(train_dataloader):
@@ -285,11 +285,11 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
 
                 # Accuracy loss
                 epoch_loss = running_loss / train_dataset_size
-                # epoch_acc = running_corrects.double() / train_dataset_size
+                epoch_acc = running_corrects.double() / train_dataset_size
                 # train_acc_arr.append(epoch_acc)
 
-                print('{} Loss: {:.4f}'.format(
-                    phase, epoch_loss))
+                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                    phase, epoch_loss, epoch_acc))
 
             elif phase == 'val':
                 epoch_loss, epoch_acc = test_loss_and_accuracy(
