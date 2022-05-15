@@ -196,11 +196,6 @@ def download_dataset(augmentation=False, in_memory=False,
                                                             test_transform)
 
 
-
-    plot_dataset_image(train_data, 0)
-    plot_dataset_image(train_data, 5)
-    plot_dataset_image(train_data, 10)
-
     return train_data, val_data, test_data
 
 class ListDataset():
