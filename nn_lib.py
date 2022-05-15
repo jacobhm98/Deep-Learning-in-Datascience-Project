@@ -85,6 +85,8 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     # If there is a cat dog dict then we want to do classification on 2 species
     cat_dog = cat_dog_dict is not None
 
+    model.train()  # Set model to training mode
+
     model.to(device)
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
@@ -106,7 +108,6 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
             if phase == 'train':
                 running_loss = 0.0
                 running_corrects = 0
-                model.train()  # Set model to training mode
                 for inputs, labels in tqdm(train_dataloader):
                     inputs = inputs.to(device)
                     if cat_dog:

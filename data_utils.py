@@ -118,36 +118,85 @@ def output_jpg_dir_of_training_data(output_path):
         save_image(image, os.path.join(output_path, f"image-{label}-{i}.jpg"))
 
 
-def download_dataset(augmentation = False, in_memory=False):
+def download_dataset(augmentation=False, in_memory=False,
+                     train_transforms=None):
     '''
     Parameters:
-    augumentation : do you to perform data augumentation like cropping etc.., set to true  
+    augumentation : do you to perform data augumentation like cropping etc.., set to true
 
     Returns:
     train and test OxfordIIITPet dataset
     '''
+    print("Downloading datasets")
     img_size = 255
+    all_data = datasets.OxfordIIITPet(root="data", split="trainval",
+                                      download=True)
+
+    base_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((img_size, img_size)),
+    ])
+
+
+
+    import os
+    if os.path.exists("data/petmean"):
+        with open("data/petmean", 'rb') as f:
+            mean = torch.load(f)
+        with open("data/petstd", 'rb') as f:
+            std = torch.load(f)
+    else:
+
+        print("Calculating mean, stds on train")
+        concatenated_train_val = torch.cat(
+            [base_transforms(x[0]).unsqueeze(-1) for x in all_data], dim=-1)
+        reshaped_train_val = concatenated_train_val.reshape(3, -1)
+
+        mean = reshaped_train_val.mean(1)
+        std = reshaped_train_val.std(1)
+
+        with open("data/petmean", 'wb') as f:
+            torch.save(mean, f)
+        with open("data/petstd", 'wb') as f:
+            torch.save(std, f)
+    norm_tf = transforms.Normalize(mean=mean,
+                                   std=std)
+
     if augmentation:
-        train_transform = create_transform(img_size, is_training = True)
-        test_transform = create_transform(img_size, is_training=False)
+        train_transform = transforms.Compose([
+            train_transforms,
+            transforms.ToTensor(),
+            transforms.Resize((img_size, img_size)),
+            norm_tf
+        ])
+        test_transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize((img_size, img_size)),
+            norm_tf
+        ])
     else:
         train_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((img_size, img_size))
+            transforms.ToTensor(),
+            transforms.Resize((img_size, img_size)),
+            norm_tf
         ])
         test_transform = train_transform
 
-    all_data =  datasets.OxfordIIITPet(root="data", split="trainval",
-                                       download=True)
-
-    test_data = datasets.OxfordIIITPet(root="data", split="test", download=True, transform=test_transform)
+    test_data = datasets.OxfordIIITPet(root="data", split="test",
+                                       download=True, transform=test_transform)
+    print("Splitting to train, val, test")
+    train_data, val_data = train_val_stratified_breed_split(all_data,
+                                                            train_transform,
+                                                            test_transform)
 
     if in_memory:
         print("Inmemorizing...")
         all_data = inmemorize_dataset(all_data)
         test_data = inmemorize_dataset(test_data)
 
-    train_data, val_data = train_val_stratified_breed_split(all_data, train_transform, test_transform)
+    plot_dataset_image(train_data, 0)
+    plot_dataset_image(train_data, 5)
+    plot_dataset_image(train_data, 10)
 
     return train_data, val_data, test_data
 
