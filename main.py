@@ -79,6 +79,7 @@ def investigate_data_augumentation_effect():
 
 
 def main():
+    investigate_effect_of_training_different_layers()
     # hyperparameters
     # set this to 2 if you want Cat dog classification else 37
     no_classes = 37  # should be 2 or 37 for binary vs multi class
@@ -141,22 +142,21 @@ def main():
 def investigate_effect_of_training_different_layers():
     # hyper parameters
     # set this to 2 if you want Cat dog classification else 37
-    no_classes = 2  # should be 2 or 37 for binary vs multi class
+    no_classes = 37  # should be 2 or 37 for binary vs multi class
     # classification
     batch_size = 64
-    no_epochs = 2
+    no_epochs = 10
     lr = 0.001
     loss_fxn = nn.CrossEntropyLoss()
-    model_name = 'resnet18'
+    model_name = 'resnet34'
     cat_dog_dict = None
 
     # download the train and test dataset and create batches for train and test dataset
-    train_data, test_data = data_utils.download_dataset(augmentation=True)
-    train_data, val_data = data_utils.train_val_split(train_data)
+    train_data, val_data, test_data = data_utils.download_dataset(augmentation=False)
 
     # use GPU if available else use CPU
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cuda"
+    device = "cpu"
     # Download the pretrained model, where you can either freeze the
     # previous layers or fine tune the whole network,
     # by setting the freeze variable
@@ -169,7 +169,7 @@ def investigate_effect_of_training_different_layers():
                                                                                               loss_fxn, optimizer,
                                                                                               no_epochs, device,
                                                                                               batch_size,
-                                                                                              cat_dog_dict)
+                                                                                              cat_dog_dict, val_metrics_filename="val_metrics_" + str(trained_layers) + ".csv", train_metrics_filename="train_metrics_" + str(trained_layers) + ".csv")
         torch.save(trained_model, "models/trained_model.model")
         print("Model trained!!")
 
