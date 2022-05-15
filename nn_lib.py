@@ -9,6 +9,158 @@ from tqdm.auto import tqdm
 import copy
 import pandas as pd
 
+from torch.utils.data import DataLoader , TensorDataset
+def append_pseudo_labels(pseudolabels, unlabelled_imgs, transform):
+    '''
+    labels appended to the unlabeled dataset returns dataloader with transforms as needed
+    '''
+    pseudo_dataset = TensorDataset(unlabelled_imgs , pseudolabels)
+    pseudo_dataloader = DataLoader(pseudo_dataset , batch_size = 16, shuffle=True, transform = transform)
+
+    return pseudo_dataset, pseudo_dataloader
+
+def combine_datasets(pseudo_dataset, train_dataset, transform):
+    '''
+    combines the two given dataset and returns the combined dataset and combined dataloader.
+    '''
+    combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
+    combined_dataloader = DataLoader(dataset=combined_dataset, transform = transform)
+
+    return combined_dataset, combined_dataloader
+
+   
+
+'''
+Pseudolabelling:
+- get unlabelled data
+.- make predictions using the model we have, and get the labels
+.- call append_pseudolabels
+.- call combine_dataset
+.- make predictions again
+.- test the accuracy, loop for n epoches
+'''
+def train_model_pseudolabelling(model, unlabelled_data, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
+                cat_dog=True, train_metrics_filename="train_metrics.csv",
+                val_metrics_filename="val_metrics.csv"):
+    '''
+    Parameters:
+    cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
+    Return:
+    Trained model, loss_arr, acc_arr
+    '''
+
+    # If there is a cat dog dict then we want to do classification on 2 species
+    cat_dog = cat_dog_dict is not None
+
+    model.to(device)
+    train_dataset_size = len(train_data)
+    val_dataset_size = len(val_data)
+
+    train_dataloader = DataLoader(train_data, batch_size=batch_size,
+                                  shuffle=True, num_workers=8,
+                                  prefetch_factor=2)
+    test_dataloader = DataLoader(val_data, batch_size=batch_size,
+                                 shuffle=True,
+                                 num_workers=8, prefetch_factor=2)
+    best_acc = 0.0
+    best_model_wts = copy.deepcopy(model.state_dict())
+    train_loss_arr = []
+    val_loss_arr = []
+    train_acc_arr = []
+    val_acc_arr = []
+    pseudo_data = None
+
+    progress_bar = tqdm(range(no_epochs))
+    for i in progress_bar:
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                running_loss = 0.0
+                running_corrects = 0
+                model.train()  # Set model to training model
+                # add pseudolabelling content here
+                if pseudo_data != None :
+                    transform = None
+                    train_data, train_dataloader = combine_datasets(pseudo_data, train_data, transform)
+                    train_dataset_size = len(train_data)
+                for inputs, labels in tqdm(train_dataloader):
+                    inputs = inputs.to(device)
+                    if cat_dog:
+                        labels = gen_cat_dog_label(cat_dog_dict, labels)
+
+                    labels = labels.to(device)
+                    # with torch.set_grad_enabled(True):
+                    outputs = model(inputs)
+                    preds = torch.argmax(outputs, 1, keepdim=True)
+                    loss = loss_fxn(outputs, labels)
+
+                    # Keep track of loss metric
+                    train_loss_arr.append(loss.item())
+
+                    # Do backward pass
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+
+                    running_loss += loss.item()
+                    progress_bar.set_postfix_str(loss.item())
+                    running_corrects += torch.sum(preds.T == labels.data)
+                # Accuracy loss
+                epoch_loss = running_loss / train_dataset_size
+                # epoch_acc = running_corrects.double() / train_dataset_size
+                # train_acc_arr.append(epoch_acc)
+
+                print('{} Loss: {:.4f}'.format(
+                    phase, epoch_loss))
+            else:
+                model.eval()  # Set model to evaluate mode
+                running_loss = 0.0
+                running_corrects = 0
+
+                # Iterate over data.
+                for inputs, labels in test_dataloader:
+                    inputs = inputs.to(device)
+                    if cat_dog:
+                        labels = gen_cat_dog_label(cat_dog_dict, labels)
+                    labels = labels.to(device)
+                    outputs = model(inputs)
+                    preds = torch.argmax(outputs, dim=1, keepdim=True)
+                    running_loss += loss.item()
+                    running_corrects += torch.sum(preds.T == labels.data)
+                # for pseudolabelling
+                outputs = []
+                for inputs in unlabelled_data:
+                    outputs.append(model(input))
+                pseudo_data = append_pseudo_labels(outputs, unlabelled_data, transform)
+                
+                epoch_loss = running_loss / val_dataset_size
+                epoch_acc = running_corrects.double() / val_dataset_size
+
+                val_acc_arr.append(epoch_acc.item())
+                val_loss_arr.append(epoch_loss)
+                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                    phase, epoch_loss, epoch_acc))
+                if phase == 'val' and epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
+
+    print('Best val Acc: {:4f}'.format(best_acc))
+
+    # load best model weights
+    model.load_state_dict(best_model_wts)
+    df_train = pd.DataFrame({
+        'train_loss': train_loss_arr,
+    })
+
+    df_val = pd.DataFrame({
+        'val_acc': val_acc_arr,
+        'val loss': val_loss_arr
+    })
+    df_train.to_csv(train_metrics_filename)
+    df_val.to_csv(val_metrics_filename)
+    return model, train_acc_arr,train_loss_arr, val_acc_arr, val_loss_arr
+
+
+
 
 def is_layer_frozen(layer: nn.Module):
     return all([x.requires_grad == True for x in layer.parameters()])
