@@ -79,7 +79,7 @@ def investigate_data_augumentation_effect():
 
 
 def main():
-    investigate_effect_of_training_different_layers()
+    data_utils.create_val_plot("results/val_metrics_5.csv")
     # hyperparameters
     # set this to 2 if you want Cat dog classification else 37
     no_classes = 37  # should be 2 or 37 for binary vs multi class

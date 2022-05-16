@@ -7,10 +7,12 @@ import numpy as np
 
 from torchvision import datasets
 from torchvision import transforms
-from timm.data.transforms_factory import create_transform 
+from timm.data.transforms_factory import create_transform
 from torchvision.utils import save_image
 import matplotlib.pyplot as plt
 from torch.utils.data.dataset import Dataset
+import pandas as pd
+
 
 def print_dataset_summary(dataset):
     """
@@ -18,7 +20,7 @@ def print_dataset_summary(dataset):
     pytorch dataset
     :param dataset: A pytorch dataset
     """
-    label2count = defaultdict(lambda : 0)
+    label2count = defaultdict(lambda: 0)
     total = 0
     for datapoint in dataset:
         label2count[datapoint[1]] += 1
@@ -40,9 +42,11 @@ def demo_transformations(dataset):
             )
     plt.show()
 
-def plot_dataset_image(dataset , index):
+
+def plot_dataset_image(dataset, index):
     plt.imshow()
     plt.show()
+
 
 def seed_everything(seed=0):
     np.random.seed(seed)
@@ -57,18 +61,20 @@ def train_val_split(train_dataset):
     return torch.utils.data.random_split(train_dataset, lengths=[train_size,
                                                                  val_size])
 
+
 class CustomDataset(Dataset):
     def __init__(self, idxlist, dataloader_, transform):
         self.idx_list = idxlist
         self.dataloader = dataloader_
-        self.transform  = transform
+        self.transform = transform
 
     def __getitem__(self, idx: int):
-            val = self.dataloader[self.idx_list[idx]]
-            return self.transform(val[0]), val[1]
+        val = self.dataloader[self.idx_list[idx]]
+        return self.transform(val[0]), val[1]
 
     def __len__(self):
         return len(self.idx_list)
+
 
 def train_val_stratified_breed_split(train_dataloader, train_transform, test_transform):
     seed_everything(0)
@@ -77,16 +83,16 @@ def train_val_stratified_breed_split(train_dataloader, train_transform, test_tra
     # use everything else for training
     # returns: training and validation indices
     j = 20
-    current_class=0
+    current_class = 0
     train_idx = []
     validation_idx = []
     idx = 0
     for dat, lab in train_dataloader:
 
         if j == 0:
-            current_class = current_class +1
+            current_class = current_class + 1
             j = 20
-        if lab == current_class and j!=0:
+        if lab == current_class and j != 0:
             # validation_data.append(dat)
             # validation_labels.append(lab)
             validation_idx.append(idx)
@@ -99,6 +105,7 @@ def train_val_stratified_breed_split(train_dataloader, train_transform, test_tra
 
     return CustomDataset(train_idx, train_dataloader, train_transform), CustomDataset(
         validation_idx, train_dataloader, test_transform)
+
 
 def gen_cat_dog_label(cat_dog_dict, labels):
     '''
@@ -119,7 +126,6 @@ def gen_cat_dog_label(cat_dog_dict, labels):
             raise ValueError
 
     return torch.LongTensor(cat_dog_labels)
-
 
 
 def output_jpg_dir_of_training_data(output_path):
@@ -147,8 +153,6 @@ def download_dataset(augmentation=False, in_memory=False,
         transforms.ToTensor(),
         transforms.Resize((img_size, img_size)),
     ])
-
-
 
     import os
     if os.path.exists("data/petmean"):
@@ -206,18 +210,21 @@ def download_dataset(augmentation=False, in_memory=False,
                                                             train_transform,
                                                             test_transform)
 
-
     demo_transformations(train_data)
 
     return train_data, val_data, test_data
 
+
 class ListDataset():
-    def __init__(self, l : List):
+    def __init__(self, l: List):
         self.l = l
+
     def __getitem__(self, item):
         return self.l[item]
+
     def __len__(self):
         return len(self.l)
+
 
 def inmemorize_dataset(dataset):
     examples = [dataset[i] for i in range(len(dataset))]
@@ -249,3 +256,15 @@ def create_cat_dog_dict():
     a_file.close()
     cat_dog_dict = {"cat": cat_list, "dog": dog_list}
     return cat_dog_dict
+
+
+def create_train_plot(train_metrics_file):
+    train_metrics = pd.read_csv(train_metrics_file)
+    train_metrics.plot(x=0, y=1, kind="line", xlabel="batches trained")
+    plt.show()
+
+
+def create_val_plot(val_metrics_file):
+    val_metrics = pd.read_csv(val_metrics_file)
+    val_metrics.plot(x=0, y=1, kind="line", xlabel="epochs")
+    plt.show()
