@@ -129,11 +129,7 @@ def output_jpg_dir_of_training_data(output_path):
 
 
 def download_dataset(augmentation=False, in_memory=False,
-<<<<<<< HEAD
-                     train_transforms=None, unlabelled_percent=20):
-=======
                      train_transforms=None, num_train_examples=20):
->>>>>>> df967ec1b1fe0541db005791e4ef3fb8e14817d6
     '''
     Parameters:
     augumentation : do you to perform data augumentation like cropping etc.., set to true
@@ -206,12 +202,7 @@ def download_dataset(augmentation=False, in_memory=False,
     print("Splitting to train, val, test")
     train_data, val_data = train_val_stratified_breed_split(all_data,
                                                             train_transform,
-<<<<<<< HEAD
-                                                            test_transform, num_ex = unlabelled_percent)  
-=======
-                                                            test_transform,
-                                                            num_train_examples)
->>>>>>> df967ec1b1fe0541db005791e4ef3fb8e14817d6
+                                                            test_transform, num_ex =num_train_examples)  
 
 
     demo_transformations(train_data)
