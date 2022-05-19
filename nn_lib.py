@@ -1,4 +1,5 @@
 import imp
+from importlib.util import set_loader
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, Dataset
@@ -30,13 +31,13 @@ def combine_datasets(pseudo_dataset, train_dataset, transform):
 
     return combined_dataset, combined_dataloader
 class UnsupervisedDataset(Dataset):
-    def init(self, ds, labels):
-        self.ds = ds
+    def __init__(self, img, labels):
+        self.img = img
         self.labels = labels
-    def getitem(self, i):
-        return self.ds[i][0].cuda()
-    def len(self):
-        return len(self.ds)
+    def __getitem__(self, i):
+        return self.img[i][0].cuda(), self.labels[i].cuda()
+    def __len__(self):
+        return len(self.labels)
 '''
 Pseudolabelling:
 - get unlabelled data
@@ -129,13 +130,13 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                 input1 = []
                 outputs = []
                 for inputs, labels in test_dataloader:
-                    inputs, labels= inputs.to(device), labels.to(device)
+                    inputs, labels = inputs.to(device), labels.to(device)
                     output = model(inputs)
                     input1.append(inputs)
                     preds = torch.argmax(output, dim=1, keepdim=True)
                     outputs.append(preds.T)
                 # pseudo_data, pseudodataloader = append_pseudo_labels(outputs, input1, transform=None)
-                pseudo_data = UnsupervisedDataset(np.array(outputs), np.array(input1))
+                pseudo_data = UnsupervisedDataset(outputs, input1)
                 print("Pseudo data generated!")
     # load best model weights
     model.load_state_dict(best_model_wts)
