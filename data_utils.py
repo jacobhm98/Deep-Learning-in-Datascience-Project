@@ -76,32 +76,27 @@ class CustomDataset(Dataset):
         return len(self.idx_list)
 
 
-def train_val_stratified_breed_split(train_dataloader, train_transform, test_transform, num_ex = 20):
+def train_val_stratified_breed_split(train_dataloader, train_transform,
+                                     test_transform, num_ex = 80):
     seed_everything(0)
     # input: trainval dataloader
-    # Taka num_ex samples out of each class for validation/unlabelled data (default = 20)
+    # Taka num_ex samples out of each class for train_set (default = 20)
     # use everything else for training
     # returns: training and validation indices
     j = num_ex
     current_class = 0
     train_idx = []
     validation_idx = []
-    idx = 0
-    for dat, lab in train_dataloader:
 
-        if j == 0:
-            current_class = current_class + 1
-            j = num_ex
-        if lab == current_class and j != 0:
-            # validation_data.append(dat)
-            # validation_labels.append(lab)
-            validation_idx.append(idx)
-            j = j - 1
+    count_per_label = defaultdict(lambda : 0)
+
+    for i, (dat, lab) in enumerate(train_dataloader):
+        if count_per_label[lab] < num_ex:
+            train_idx.append(i)
+            count_per_label[lab] += 1
         else:
-            # train_data.append(dat)
-            # train_labels.append(lab)
-            train_idx.append(idx)
-        idx = idx + 1
+            validation_idx.append(i)
+
     return CustomDataset(train_idx, train_dataloader, train_transform), CustomDataset(
         validation_idx, train_dataloader, test_transform)
 
@@ -134,7 +129,11 @@ def output_jpg_dir_of_training_data(output_path):
 
 
 def download_dataset(augmentation=False, in_memory=False,
+<<<<<<< HEAD
                      train_transforms=None, unlabelled_percent=20):
+=======
+                     train_transforms=None, num_train_examples=20):
+>>>>>>> df967ec1b1fe0541db005791e4ef3fb8e14817d6
     '''
     Parameters:
     augumentation : do you to perform data augumentation like cropping etc.., set to true
@@ -207,7 +206,12 @@ def download_dataset(augmentation=False, in_memory=False,
     print("Splitting to train, val, test")
     train_data, val_data = train_val_stratified_breed_split(all_data,
                                                             train_transform,
+<<<<<<< HEAD
                                                             test_transform, num_ex = unlabelled_percent)  
+=======
+                                                            test_transform,
+                                                            num_train_examples)
+>>>>>>> df967ec1b1fe0541db005791e4ef3fb8e14817d6
 
 
     demo_transformations(train_data)
