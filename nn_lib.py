@@ -129,6 +129,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                 input = []
                 outputs = []
                 for inputs, labels in test_dataloader:
+                    inputs, labels = inputs.cuda(), labels.cuda()
                     output = model(inputs)
                     input.append(inputs)
                     preds = torch.argmax(output, dim=1, keepdim=True)
