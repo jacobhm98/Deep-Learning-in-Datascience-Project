@@ -1,7 +1,7 @@
 import json
 import os
-source = "./gans_training/images"
-destination = "./gans_training/images"
+source = "../../gans_training/images"
+destination = "../../gans_training/images"
 files_list = os.listdir(source)
 data_dict = {}
 data_dict['labels'] = []
