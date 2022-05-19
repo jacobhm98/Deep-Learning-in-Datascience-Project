@@ -93,6 +93,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                 else:
                     print("In first epoch, unlabelled data not used yet!")
                 for inputs, labels in tqdm(train_dataloader):
+                    inputs, labels = inputs.cuda(), labels.cuda()
                     inputs = inputs.to(device)
                     if cat_dog:
                         labels = gen_cat_dog_label(cat_dog_dict, labels)
