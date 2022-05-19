@@ -1,6 +1,6 @@
 import os
-from PIL import image
-path = ./"gans_training/images"
+from PIL import Image
+path = "../../gans_training/images"
 
 for item in os.listdir(path):
     im = Image.open(path + '/' +  item)
