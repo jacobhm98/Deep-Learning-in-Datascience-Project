@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, Dataset
 from data_utils import gen_cat_dog_label
 # from torchvision.transforms import ToTensor
 import torch.nn as nn
+from torchvision import transforms
 from torch.optim import Adam, AdamW
 from tqdm.auto import tqdm
 import copy
@@ -26,9 +27,14 @@ def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     combines the two given dataset and returns the combined dataset and combined dataloader.
     '''
+    img_size =255
+    base_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((img_size, img_size)),
+    ])
     combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
     combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
-                                  shuffle=True)
+                                  shuffle=True, transforms = base_transforms)
 
     return combined_dataset, combined_dataloader
 class UnsupervisedDataset(Dataset):
@@ -65,14 +71,19 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
     model.to(device)
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
+    img_size =255
+    base_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((img_size, img_size)),
+    ])
 
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=8,
-                                  prefetch_factor=2)
+                                  prefetch_factor=2, transforms = base_transforms)
     # here is val_data is used as unlabelled data, hence the test_dataloader is unlabelled data
     test_dataloader = DataLoader(val_data, batch_size=batch_size,
                                  shuffle=True,
-                                 num_workers=8, prefetch_factor=2)
+                                 num_workers=8, prefetch_factor=2, transforms = base_transforms)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
@@ -249,11 +260,14 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     model.to(device)
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
-
+    img_size = 255
+    base_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((img_size, img_size)),
+    ])
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=num_workers,
-                                  prefetch_factor=prefetch_factor)
-
+                                  prefetch_factor=prefetch_factor, transform = base_transforms)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
