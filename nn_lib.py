@@ -121,7 +121,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
 
                 # print('{} Loss: {:.4f}'.format(phase, epoch_loss))
             else:
-                print("reaching here")
+                print("reaching here!!")
                 model.eval()  # Set model to evaluate mode
                 print("crossed this")
 
@@ -133,7 +133,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                     input1.append(inputs)
                     preds = torch.argmax(output, dim=1, keepdim=True)
                     outputs.append(preds.T)
-                pseudo_data = UnsupervisedDataset(input1, outputs)
+                pseudo_data, _ = UnsupervisedDataset(input1, outputs)
                 # pseudo_data = append_pseudo_labels(outputs, input, transform)
                 print("Pseudo data generated!")
     # load best model weights
