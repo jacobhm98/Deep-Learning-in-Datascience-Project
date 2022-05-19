@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 import copy
 import pandas as pd
 
-from torch.utils.data import DataLoader , TensorDataset
+from torch.utils.data import DataLoader , TensorDataset   
 def append_pseudo_labels(pseudolabels, unlabelled_imgs, transform):
     '''
     labels appended to the unlabeled dataset returns dataloader with transforms as needed
@@ -29,8 +29,6 @@ def combine_datasets(pseudo_dataset, train_dataset, transform):
 
     return combined_dataset, combined_dataloader
 
-   
-
 '''
 Pseudolabelling:
 - get unlabelled data
@@ -40,9 +38,10 @@ Pseudolabelling:
 .- make predictions again
 .- test the accuracy, loop for n epoches
 '''
-def train_model_pseudolabelling(model, unlabelled_data, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
+def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict, 
                 cat_dog=True, train_metrics_filename="train_metrics.csv",
-                val_metrics_filename="val_metrics.csv"):
+                val_metrics_filename="val_metrics.csv", num_workers=2,
+                prefetch_factor=2):
     '''
     Parameters:
     cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}

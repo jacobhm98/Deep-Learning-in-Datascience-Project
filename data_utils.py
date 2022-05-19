@@ -76,13 +76,13 @@ class CustomDataset(Dataset):
         return len(self.idx_list)
 
 
-def train_val_stratified_breed_split(train_dataloader, train_transform, test_transform):
+def train_val_stratified_breed_split(train_dataloader, train_transform, test_transform, num_ex = 20):
     seed_everything(0)
     # input: trainval dataloader
-    # Taka 20 samples out of each class for validation
+    # Taka num_ex samples out of each class for validation/unlabelled data (default = 20)
     # use everything else for training
     # returns: training and validation indices
-    j = 20
+    j = num_ex
     current_class = 0
     train_idx = []
     validation_idx = []
@@ -91,7 +91,7 @@ def train_val_stratified_breed_split(train_dataloader, train_transform, test_tra
 
         if j == 0:
             current_class = current_class + 1
-            j = 20
+            j = num_ex
         if lab == current_class and j != 0:
             # validation_data.append(dat)
             # validation_labels.append(lab)
@@ -102,9 +102,6 @@ def train_val_stratified_breed_split(train_dataloader, train_transform, test_tra
             # train_labels.append(lab)
             train_idx.append(idx)
         idx = idx + 1
-
-    return CustomDataset(train_idx, train_dataloader, train_transform), CustomDataset(
-        validation_idx, train_dataloader, test_transform)
 
 
 def gen_cat_dog_label(cat_dog_dict, labels):

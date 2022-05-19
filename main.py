@@ -79,7 +79,7 @@ def investigate_data_augumentation_effect():
 
 
 def main():
-    data_utils.create_val_plot("results/val_metrics_5.csv")
+    # data_utils.create_val_plot("results/val_metrics_5.csv")
     # hyperparameters
     # set this to 2 if you want Cat dog classification else 37
     no_classes = 37  # should be 2 or 37 for binary vs multi class
@@ -125,7 +125,7 @@ def main():
                                       no_classes, fine_tune_batch_norm=True)
 
     if no_classes == 2 or no_classes == 37:
-        trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model(
+        trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model_pseudolabelling(
             model,
             train_data, val_data,
             loss_fxn, optimizer,
