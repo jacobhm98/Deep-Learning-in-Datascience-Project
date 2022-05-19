@@ -125,8 +125,9 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                 outputs = []
                 for inputs, labels in test_dataloader:
                     outputs.append(model(inputs))
+                    output = model(inputs)
                     input.append(inputs)
-                    preds = torch.argmax(outputs, dim=1, keepdim=True)
+                    preds = torch.argmax(output, dim=1, keepdim=True)
                 pseudo_data = append_pseudo_labels(outputs, input, transform)
                 print("Pseudo data generated!")
                 epoch_loss = running_loss / val_dataset_size
