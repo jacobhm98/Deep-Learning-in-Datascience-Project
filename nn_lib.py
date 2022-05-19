@@ -123,7 +123,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                     phase, epoch_loss))
             else:
                 model.eval()  # Set model to evaluate mode
-
+                print("crossed this!")
                 # Iterate over data.
                 # for pseudolabelling
                 input = []
