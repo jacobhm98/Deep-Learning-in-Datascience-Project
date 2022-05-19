@@ -28,8 +28,7 @@ def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
     combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
-                                  shuffle=True, num_workers=8,
-                                  prefetch_factor=2)
+                                  shuffle=True)
 
     return combined_dataset, combined_dataloader
 class UnsupervisedDataset(Dataset):
