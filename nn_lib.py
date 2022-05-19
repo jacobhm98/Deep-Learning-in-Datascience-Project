@@ -27,14 +27,10 @@ def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     combines the two given dataset and returns the combined dataset and combined dataloader.
     '''
-    img_size =255
-    base_transforms = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((img_size, img_size)),
-    ])
+    
     combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
     combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
-                                  shuffle=True, transforms = base_transforms)
+                                  shuffle=True)
 
     return combined_dataset, combined_dataloader
 class UnsupervisedDataset(Dataset):
@@ -71,19 +67,14 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
     model.to(device)
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
-    img_size =255
-    base_transforms = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((img_size, img_size)),
-    ])
-
+    
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=8,
-                                  prefetch_factor=2, transforms = base_transforms)
+                                  prefetch_factor=2)
     # here is val_data is used as unlabelled data, hence the test_dataloader is unlabelled data
     test_dataloader = DataLoader(val_data, batch_size=batch_size,
                                  shuffle=True,
-                                 num_workers=8, prefetch_factor=2, transforms = base_transforms)
+                                 num_workers=8, prefetch_factor=2)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
