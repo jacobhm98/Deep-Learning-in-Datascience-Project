@@ -22,12 +22,14 @@ def append_pseudo_labels(pseudolabels, unlabelled_imgs, transform):
 
     return pseudo_dataset, pseudo_dataloader
 
-def combine_datasets(pseudo_dataset, train_dataset, transform):
+def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     combines the two given dataset and returns the combined dataset and combined dataloader.
     '''
     combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
-    combined_dataloader = DataLoader(dataset=combined_dataset, transform = transform)
+    combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
+                                  shuffle=True, num_workers=8,
+                                  prefetch_factor=2)
 
     return combined_dataset, combined_dataloader
 class UnsupervisedDataset(Dataset):
@@ -89,8 +91,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                 model.train()  # Set model to training model
                 # add pseudolabelling content here
                 if pseudo_data != None :
-                    transform = None
-                    train_data, train_dataloader = combine_datasets(pseudo_data, train_data, transform)
+                    train_data, train_dataloader = combine_datasets(pseudo_data, train_data, batch_size)
                     train_dataset_size = len(train_data)
                 else:
                     print("In first epochsdfdfss, unlabelled data not used yet!")
