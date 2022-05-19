@@ -123,8 +123,6 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                     phase, epoch_loss))
             else:
                 model.eval()  # Set model to evaluate mode
-                running_loss = 0.0
-                running_corrects = 0
 
                 # Iterate over data.
                 # for pseudolabelling
@@ -136,21 +134,8 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                     preds = torch.argmax(output, dim=1, keepdim=True)
                     outputs.append(preds.T)
                 pseudo_data = UnsupervisedDataset(input, outputs)
-                pseudo_data = append_pseudo_labels(outputs, input, transform)
+                # pseudo_data = append_pseudo_labels(outputs, input, transform)
                 print("Pseudo data generated!")
-                epoch_loss = running_loss / val_dataset_size
-                epoch_acc = running_corrects.double() / val_dataset_size
-
-                val_acc_arr.append(epoch_acc.item())
-                val_loss_arr.append(epoch_loss)
-                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                    phase, epoch_loss, epoch_acc))
-                if phase == 'val' and epoch_acc > best_acc:
-                    best_acc = epoch_acc
-                    best_model_wts = copy.deepcopy(model.state_dict())
-
-    print('Best val Acc: {:4f}'.format(best_acc))
-
     # load best model weights
     model.load_state_dict(best_model_wts)
     df_train = pd.DataFrame({
