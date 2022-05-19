@@ -129,7 +129,7 @@ def output_jpg_dir_of_training_data(output_path):
 
 
 def download_dataset(augmentation=False, in_memory=False,
-                     train_transforms=None, num_train_examples=20):
+                     train_transforms=None, num_train_examples=80):
     '''
     Parameters:
     augumentation : do you to perform data augumentation like cropping etc.., set to true
