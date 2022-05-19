@@ -28,7 +28,14 @@ def combine_datasets(pseudo_dataset, train_dataset, transform):
     combined_dataloader = DataLoader(dataset=combined_dataset, transform = transform)
 
     return combined_dataset, combined_dataloader
-
+class UnsupervisedDataset(Dataset):
+    def init(self, ds, labels):
+        self.ds = ds
+        self.labels = labels
+    def getitem(self, i):
+        return self.ds[i][0].cuda()
+    def len(self):
+        return len(self.ds)
 '''
 Pseudolabelling:
 - get unlabelled data
@@ -128,6 +135,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                     input.append(inputs)
                     preds = torch.argmax(output, dim=1, keepdim=True)
                     outputs.append(preds.T)
+                pseudo_data = UnsupervisedDataset(input, outputs)
                 pseudo_data = append_pseudo_labels(outputs, input, transform)
                 print("Pseudo data generated!")
                 epoch_loss = running_loss / val_dataset_size
