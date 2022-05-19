@@ -59,6 +59,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=8,
                                   prefetch_factor=2)
+    # here is val_data is used as unlabelled data, hence the test_dataloader is unlabelled data
     test_dataloader = DataLoader(val_data, batch_size=batch_size,
                                  shuffle=True,
                                  num_workers=8, prefetch_factor=2)
@@ -82,6 +83,8 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                     transform = None
                     train_data, train_dataloader = combine_datasets(pseudo_data, train_data, transform)
                     train_dataset_size = len(train_data)
+                else:
+                    print("In first epoch, unlabelled data not used yet!")
                 for inputs, labels in tqdm(train_dataloader):
                     inputs = inputs.to(device)
                     if cat_dog:
@@ -117,21 +120,15 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                 running_corrects = 0
 
                 # Iterate over data.
-                for inputs, labels in test_dataloader:
-                    inputs = inputs.to(device)
-                    if cat_dog:
-                        labels = gen_cat_dog_label(cat_dog_dict, labels)
-                    labels = labels.to(device)
-                    outputs = model(inputs)
-                    preds = torch.argmax(outputs, dim=1, keepdim=True)
-                    running_loss += loss.item()
-                    running_corrects += torch.sum(preds.T == labels.data)
                 # for pseudolabelling
+                input = []
                 outputs = []
-                for inputs in unlabelled_data:
-                    outputs.append(model(input))
-                pseudo_data = append_pseudo_labels(outputs, unlabelled_data, transform)
-                
+                for inputs, labels in test_dataloader:
+                    outputs.append(model(inputs))
+                    input.append(inputs)
+                    preds = torch.argmax(outputs, dim=1, keepdim=True)
+                pseudo_data = append_pseudo_labels(outputs, input, transform)
+                print("Pseudo data generated!")
                 epoch_loss = running_loss / val_dataset_size
                 epoch_acc = running_corrects.double() / val_dataset_size
 
