@@ -153,6 +153,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
 
 
 
+
 def is_layer_frozen(layer: nn.Module):
     return all([x.requires_grad == True for x in layer.parameters()])
 
