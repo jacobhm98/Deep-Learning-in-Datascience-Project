@@ -133,7 +133,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                     input1.append(inputs)
                     preds = torch.argmax(output, dim=1, keepdim=True)
                     outputs.append(preds.T)
-                pseudo_data, _ = UnsupervisedDataset(input1, outputs)
+                pseudo_data, pseudodataloader = append_pseudo_labels(outputs, input1, transform=None)
                 # pseudo_data = append_pseudo_labels(outputs, input, transform)
                 print("Pseudo data generated!")
     # load best model weights
