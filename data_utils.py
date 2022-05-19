@@ -133,6 +133,7 @@ def download_dataset(augmentation=False, in_memory=False,
     '''
     Parameters:
     augumentation : do you to perform data augumentation like cropping etc.., set to true
+    unlabelled_percent : unlabelled data percentage to remove from training
 
     Returns:
     train and test OxfordIIITPet dataset
@@ -201,8 +202,7 @@ def download_dataset(augmentation=False, in_memory=False,
     print("Splitting to train, val, test")
     train_data, val_data = train_val_stratified_breed_split(all_data,
                                                             train_transform,
-                                                            test_transform,
-                                                            num_train_examples)
+                                                            test_transform, num_ex =num_train_examples)  
 
 
     demo_transformations(train_data)

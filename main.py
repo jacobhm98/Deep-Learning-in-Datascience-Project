@@ -152,7 +152,8 @@ def investigate_effect_of_training_different_layers():
     cat_dog_dict = None
 
     # download the train and test dataset and create batches for train and test dataset
-    train_data, val_data, test_data = data_utils.download_dataset(augmentation=False)
+    train_data, val_data, test_data = data_utils.download_dataset(augmentation=False, unlabelled_percent=20)
+
 
     # use GPU if available else use CPU
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -164,12 +165,19 @@ def investigate_effect_of_training_different_layers():
         model, optimizer = download_model(model_name, 1, True, [lr], no_classes)
         print_model_parameter_summary(model)
 
-        trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model(model,
+        # trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model(model,
+        #                                                                                       train_data, val_data,
+        #                                                                                       loss_fxn, optimizer,
+        #                                                                                       no_epochs, device,
+        #                                                                                       batch_size,
+        #                                                                                       cat_dog_dict, val_metrics_filename="val_metrics_" + str(trained_layers) + ".csv", train_metrics_filename="train_metrics_" + str(trained_layers) + ".csv")
+
+        trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model_pseudolabelling(model,
                                                                                               train_data, val_data,
                                                                                               loss_fxn, optimizer,
                                                                                               no_epochs, device,
                                                                                               batch_size,
-                                                                                              cat_dog_dict, val_metrics_filename="val_metrics_" + str(trained_layers) + ".csv", train_metrics_filename="train_metrics_" + str(trained_layers) + ".csv")
+                                                                                              cat_dog_dict, val_metrics_filename="val_metrics_" + str(trained_layers) + ".csv", train_metrics_filename="train_metrics_" + str(trained_layers) + ".csv")        
         torch.save(trained_model, "models/trained_model.model")
         print("Model trained!!")
 
