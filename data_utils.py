@@ -102,7 +102,8 @@ def train_val_stratified_breed_split(train_dataloader, train_transform, test_tra
             # train_labels.append(lab)
             train_idx.append(idx)
         idx = idx + 1
-
+    return CustomDataset(train_idx, train_dataloader, train_transform), CustomDataset(
+        validation_idx, train_dataloader, test_transform)
 
 def gen_cat_dog_label(cat_dog_dict, labels):
     '''
@@ -206,6 +207,7 @@ def download_dataset(augmentation=False, in_memory=False,
     train_data, val_data = train_val_stratified_breed_split(all_data,
                                                             train_transform,
                                                             test_transform)
+
 
     demo_transformations(train_data)
 
