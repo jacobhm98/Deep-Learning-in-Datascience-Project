@@ -3,7 +3,7 @@ from importlib.util import set_loader
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, Dataset
-from data_utils import gen_cat_dog_label
+from data_utils import gen_cat_dog_label, mtask_train_dl, mtask_loss_fxn
 # from torchvision.transforms import ToTensor
 import torch.nn as nn
 from torchvision import transforms
@@ -13,34 +13,46 @@ import copy
 import pandas as pd
 import numpy as np
 
-from torch.utils.data import DataLoader , TensorDataset   
+from torch.utils.data import DataLoader, TensorDataset
+
+
 def append_pseudo_labels(pseudolabels, unlabelled_imgs, transform):
     '''
     labels appended to the unlabeled dataset returns dataloader with transforms as needed
     '''
-    pseudo_dataset = TensorDataset(unlabelled_imgs , pseudolabels)
-    pseudo_dataloader = DataLoader(pseudo_dataset , batch_size = 16, shuffle=True, transform = transform)
+    pseudo_dataset = TensorDataset(unlabelled_imgs, pseudolabels)
+    pseudo_dataloader = DataLoader(pseudo_dataset, batch_size=16, shuffle=True,
+                                   transform=transform)
 
     return pseudo_dataset, pseudo_dataloader
+
 
 def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     combines the two given dataset and returns the combined dataset and combined dataloader.
     '''
-    
-    combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
-    combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
-                                  shuffle=True)
+
+    combined_dataset = torch.utils.data.ConcatDataset(
+        [train_dataset, pseudo_dataset])
+    combined_dataloader = DataLoader(dataset=combined_dataset,
+                                     batch_size=batch_size,
+                                     shuffle=True)
 
     return combined_dataset, combined_dataloader
+
+
 class UnsupervisedDataset(Dataset):
     def __init__(self, img, labels):
         self.img = img
         self.labels = labels
+
     def __getitem__(self, i):
         return self.img[i][0].cuda(), self.labels[i].cuda()
+
     def __len__(self):
         return len(self.labels)
+
+
 '''
 Pseudolabelling:
 - get unlabelled data
@@ -50,10 +62,16 @@ Pseudolabelling:
 .- make predictions again
 .- test the accuracy, loop for n epoches
 '''
-def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict, 
-                cat_dog=True, train_metrics_filename="train_metrics.csv",
-                val_metrics_filename="val_metrics.csv", num_workers=2,
-                prefetch_factor=2):
+
+
+def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
+                                optimizer, no_epochs, device, batch_size,
+                                cat_dog_dict,
+                                cat_dog=True,
+                                train_metrics_filename="train_metrics.csv",
+                                val_metrics_filename="val_metrics.csv",
+                                num_workers=2,
+                                prefetch_factor=2):
     '''
     Parameters:
     cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
@@ -67,7 +85,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
     model.to(device)
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
-    
+
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=8,
                                   prefetch_factor=2)
@@ -91,11 +109,13 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
                 running_corrects = 0
                 model.train()  # Set model to training model
                 # add pseudolabelling content here
-                if pseudo_data != None :
-                    train_data, train_dataloader = combine_datasets(pseudo_data, train_data, batch_size)
+                if pseudo_data != None:
+                    train_data, train_dataloader = combine_datasets(
+                        pseudo_data, train_data, batch_size)
                     train_dataset_size = len(train_data)
                 else:
-                    print("In first epochsdfdfss, unlabelled data not used yet!")
+                    print(
+                        "In first epochsdfdfss, unlabelled data not used yet!")
                 for inputs, labels in tqdm(train_dataloader):
                     inputs = inputs.to(device)
                     if cat_dog:
@@ -152,10 +172,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn, optimizer
     })
     df_train.to_csv(train_metrics_filename)
     df_val.to_csv(val_metrics_filename)
-    return model, train_acc_arr,train_loss_arr, val_acc_arr, val_loss_arr
-
-
-
+    return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
 
 
 def is_layer_frozen(layer: nn.Module):
@@ -163,7 +180,7 @@ def is_layer_frozen(layer: nn.Module):
 
 
 def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
-                   n_classes, fine_tune_batch_norm=True):
+                   n_classes, fine_tune_batch_norm=True, use_multitask=False):
     '''
     Parameters:
     model_name : string -  name of the model
@@ -175,7 +192,8 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
     Returns:
     Resnet-18 model
     '''
-    model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=pretrained)
+    model = torch.hub.load('pytorch/vision:v0.10.0', model_name,
+                           pretrained=pretrained)
     print("Resnet downloaded")
     parameter_groups = []
 
@@ -189,13 +207,17 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
 
     # Change final layer
     in_features = model.fc.in_features
-    model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
+    if use_multitask:
+        model.fc = MtaskLayer(in_features=in_features, n_classes=n_classes,
+                              img_size=255)
+    else:
+        model.fc = nn.Linear(in_features=in_features, out_features=n_classes)
 
     # Freeze the first layers
     resnet_layer_names = [k for k in model._modules if "layer" in k]
     # layer1, layer2, ...., layern
     resnet_layer_names = sorted(resnet_layer_names,
-                                key=lambda x:  int(x[5:]))
+                                key=lambda x: int(x[5:]))
     for layer_name in resnet_layer_names:
         layer = model.__getattr__(layer_name)
         layer_i_to_parameters.append(layer.parameters())
@@ -214,7 +236,7 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
 
     # Assign trainable layers to parameter groups
     for i in range(n_layers_to_train):
-        parameters = layer_i_to_parameters[-(i+1)]
+        parameters = layer_i_to_parameters[-(i + 1)]
         parameter_groups.append(
             {'params': parameters, 'lr': lr_per_layer[i]}
         )
@@ -229,12 +251,117 @@ def download_model(model_name, n_layers_to_train, pretrained, lr_per_layer,
     return model, optimizer
 
 
+def train_mtask_model(model, train_data, val_data, optimizer, no_epochs,
+                          device,
+                          batch_size, cat_dog_dict, loss_balance_factor,
+                          cat_dog=True, num_workers=2,
+                          prefetch_factor=2):
+    # If there is a cat dog dict then we want to do classification on 2 species
+    cat_dog = cat_dog_dict is not None
+
+    model.to(device)
+    train_dataset_size = len(train_data)
+    img_size = 255
+    train_dataloader = mtask_train_dl(train_data, val_data, batch_size,
+                                      num_workers, prefetch_factor)
+
+    train_loss_arr = []
+    val_loss_arr = []
+    train_acc_arr = []
+    val_acc_arr = []
+
+    progress_bar = tqdm(range(no_epochs))
+    for epoch_i in progress_bar:
+        print("Epoch ", epoch_i)
+        model.train()  # Set model to training mode
+        running_loss = 0.0
+        running_corrects = 0
+        for batch in tqdm(train_dataloader):
+            if cat_dog:
+                batch.labels = gen_cat_dog_label(cat_dog_dict, batch.labels)
+
+            batch.to(device)
+
+            # with torch.set_grad_enabled(True):
+            outputs = model(batch.images)
+            loss, mseloss, celoss = mtask_loss_fxn(batch, outputs,
+                                                   loss_balance_factor)
+
+            # Keep track of loss metric
+            train_loss_arr.append(loss.item())
+
+            # Do backward pass
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            images_preds = outputs['images']
+            labels_preds = torch.argmax(outputs['labels'], dim=1, keepdim=True)
+
+            running_loss += loss.item()
+            print("Loss {:.4f}  MSE {:.4f} CE {:.4f}".format(loss.item(),
+                                                             mseloss.item(),
+                                                             celoss.item()))
+            progress_bar.set_postfix_str(
+                "Loss {:.4f}  MSE {:.4f} CE {:.4f}".format(loss.item(),
+                                                           mseloss.item(),
+                                                           celoss.item()))
+
+            running_corrects += torch.sum(
+                labels_preds[batch.labeled_idxs].T == batch.labels.data)
+
+        # Accuracy loss
+        epoch_loss = running_loss / train_dataset_size
+        epoch_acc = running_corrects.double() / train_dataset_size
+        # train_acc_arr.append(epoch_acc)
+
+        print('Loss: {:.4f} Acc: {:.4f}'.format(
+            epoch_loss, epoch_acc))
+
+    return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
+
+
+def eval_mtask_model(model, test_data, device, batch_size, cat_dog_dict,
+                     cat_dog=True, num_workers=2,
+                     prefetch_factor=2):
+    # If there is a cat dog dict then we want to do classification on 2 species
+    cat_dog = cat_dog_dict is not None
+
+    model.to(device)
+    img_size = 255
+    train_dataloader = DataLoader(test_data, num_workers=num_workers,
+                                  prefetch_factor=prefetch_factor,
+                                  batch_size=batch_size)
+    model.eval()  # Set model to training mode
+    running_loss = 0.0
+    running_corrects = 0
+    for batch in tqdm(train_dataloader):
+        images, labels = batch
+        if cat_dog:
+            labels = gen_cat_dog_label(cat_dog_dict, labels)
+
+        images = images.to(device)
+        labels = labels.to(device)
+
+        # with torch.set_grad_enabled(True):
+        outputs = model(images)
+
+        images_preds = outputs['images']
+        labels_preds = torch.argmax(outputs['labels'], dim=1, keepdim=True)
+        running_corrects += torch.sum(labels_preds.T == labels.data)
+
+    # Accuracy loss
+    epoch_acc = running_corrects.double() / len(test_data)
+    print("acc ", epoch_acc)
+
+
 def print_model_parameter_summary(model):
     for name, param in model.named_parameters():
         print(name, param.size(), param.requires_grad)
 
 
-def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, device, batch_size, cat_dog_dict,
+def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs,
+                device, batch_size, cat_dog_dict,
                 cat_dog=True, train_metrics_filename="train_metrics.csv",
                 val_metrics_filename="val_metrics.csv", num_workers=2,
                 prefetch_factor=2):
@@ -345,7 +472,8 @@ def test_loss_and_accuracy(dataset, model, loss_fxn, device,
                            ):
     cat_dog = cat_dog_dict is not None
     dataloader = DataLoader(dataset, batch_size=64, shuffle=True,
-                            num_workers=num_workers, prefetch_factor=prefetch_factor)
+                            num_workers=num_workers,
+                            prefetch_factor=prefetch_factor)
     dataset_size = len(dataset)
     model.eval()  # Set model to evaluate mode
     running_loss = 0.0
@@ -366,3 +494,22 @@ def test_loss_and_accuracy(dataset, model, loss_fxn, device,
     epoch_loss = running_loss / dataset_size
     epoch_acc = running_corrects.double() / dataset_size
     return epoch_loss, epoch_acc
+
+
+class MtaskLayer(nn.Module):
+    """
+    Final layer used for AE-CLF experiments
+    """
+
+    def __init__(self, in_features, n_classes, img_size):
+        super().__init__()
+        self.img_size = img_size
+        self.out_image = nn.Linear(in_features, 3 * img_size * img_size)
+        self.out_labels = nn.Linear(in_features, n_classes)
+
+    def forward(self, x):
+        return {
+            'images': self.out_image(x).reshape(-1, 3, self.img_size,
+                                                self.img_size),
+            'labels': self.out_labels(x)
+        }

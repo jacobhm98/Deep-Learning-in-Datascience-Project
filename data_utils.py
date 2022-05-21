@@ -4,6 +4,7 @@ from typing import List
 
 import torch
 import numpy as np
+from torch.utils.data import DataLoader
 
 from torchvision import datasets
 from torchvision import transforms
@@ -61,8 +62,92 @@ def train_val_split(train_dataset):
     return torch.utils.data.random_split(train_dataset, lengths=[train_size,
                                                                  val_size])
 
+class TrueUnsupervisedDataset(Dataset):
+    """
+    Wraps  around a labeled dataset containing (x,y) pairs
+    And makes it a dataset containing only x elements
+    """
+    def __init__(self, ds):
+        self.ds = ds
+    def __getitem__(self, i):
+        return self.ds[i][0]
+    def __len__(self):
+        return len(self.ds)
+
+
+class MtaskBatch:
+    """
+    Batch used foe trainining when multitasking between classification
+    and autoencoding
+    """
+    def __init__(self, images, labels, labeled_idxs, unlabeled_idxs):
+        self.images = images
+        self.labels = labels
+        self.unlabeled_idxs = unlabeled_idxs
+        self.labeled_idxs = labeled_idxs
+    def to(self, device):
+        self.images = self.images.to(device)
+        if len(self.labels) > 0:
+            self.labels = self.labels.to(device)
+
+MSE = torch.nn.MSELoss()
+CE = torch.nn.CrossEntropyLoss()
+
+def mtask_loss_fxn(inp_batch, model_out, t):
+    """
+    Loss function for AE-CLF multitask
+    """
+    out_images, out_labels = model_out['images'], model_out['labels']
+
+    msefactor = MSE(out_images, inp_batch.images)
+    cefactor = CE(out_labels[inp_batch.labeled_idxs], inp_batch.labels)
+
+    return (1 - t) * msefactor + t * cefactor, msefactor, cefactor
+
+
+def mtask_collate_fn(data):
+    """
+    Collate function used by mtask_train_dl. Converts a list of (x,y) or (x)
+    examples from a dataset into a MtaskBatch
+    """
+    labeled_idxs = []
+    unlabeled_idxs = []
+    images = []
+    labels = []
+    for i, elem in enumerate(data):
+        if type(elem) == tuple:
+            labeled_idxs.append(i)
+            images.append(elem[0])
+            labels.append(elem[1])
+        else:
+            unlabeled_idxs.append(i)
+            images.append(elem)
+
+    catted_images = torch.cat([x.unsqueeze(0) for x in images], dim=0)
+
+    if len(labels) > 0:
+        catted_labels = torch.cat(
+            [torch.tensor(x).unsqueeze(0) for x in labels], dim=0)
+    else:
+        catted_labels = []
+    return MtaskBatch(catted_images, catted_labels, labeled_idxs,
+                      unlabeled_idxs)
+
+
+def mtask_train_dl(labeled_ds, unlabeled_ds, batch_size, num_workers=0, prefetch_factor=2):
+    """
+    Returns a train dataloader for given unlabeled and labeled datasets
+    """
+    dl = DataLoader(torch.utils.data.ConcatDataset([labeled_ds, UnsupervisedDataset(unlabeled_ds)]), batch_size=batch_size,
+                                  shuffle=True, num_workers=num_workers,
+                                  prefetch_factor=prefetch_factor, collate_fn=mtask_collate_fn)
+    return dl
 
 class CustomDataset(Dataset):
+    """
+    Takes a dataset as input as well as a list of indexes
+    and creates a dataset containing only those indexes with a transform
+    """
     def __init__(self, idxlist, dataloader_, transform):
         self.idx_list = idxlist
         self.dataloader = dataloader_
