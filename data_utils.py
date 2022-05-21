@@ -138,7 +138,9 @@ def mtask_train_dl(labeled_ds, unlabeled_ds, batch_size, num_workers=0, prefetch
     """
     Returns a train dataloader for given unlabeled and labeled datasets
     """
-    dl = DataLoader(torch.utils.data.ConcatDataset([labeled_ds, UnsupervisedDataset(unlabeled_ds)]), batch_size=batch_size,
+    dl = DataLoader(torch.utils.data.ConcatDataset([labeled_ds,
+                                                    TrueUnsupervisedDataset(
+                                                        unlabeled_ds)]), batch_size=batch_size,
                                   shuffle=True, num_workers=num_workers,
                                   prefetch_factor=prefetch_factor, collate_fn=mtask_collate_fn)
     return dl
