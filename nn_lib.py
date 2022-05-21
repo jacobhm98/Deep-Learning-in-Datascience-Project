@@ -252,13 +252,9 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs, dev
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
     img_size = 255
-    base_transforms = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((img_size, img_size)),
-    ])
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=num_workers,
-                                  prefetch_factor=prefetch_factor, transform = base_transforms)
+                                  prefetch_factor=prefetch_factor)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
