@@ -130,9 +130,9 @@ def main():
             train_data, val_data,
             loss_fxn, optimizer,
             no_epochs, device,
-            batch_size,  cat_dog_dict, tfs,
-            num_workers=num_workers,
-            prefetch_factor=prefetch_factor)
+            batch_size, cat_dog_dict, tfs,
+            num_workers=0,
+            prefetch_factor=2)
     else:
         raise ValueError("no_classes needs to be either 2 or 37")
     torch.save(trained_model, "models/trained_model.model")
