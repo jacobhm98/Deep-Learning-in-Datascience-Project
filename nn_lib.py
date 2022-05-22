@@ -37,12 +37,12 @@ def append_pseudo_labels(pseudolabels, unlabelled_imgs):
 
     return pseudo_dataset, pseudo_dataloader
 
-def combine_datasets(pseudo_dataset, train_dataset, batch_size, transforms1):
+def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     combines the two given dataset and returns the combined dataset and combined dataloader.
     '''
-    pseudo_dataset.transform = transforms1
-    train_dataset.transform = transforms1
+    # pseudo_dataset.transform = transforms1
+    # train_dataset.transform = transforms1
     combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
     combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
                                   shuffle=True)
@@ -50,9 +50,10 @@ def combine_datasets(pseudo_dataset, train_dataset, batch_size, transforms1):
 
 
 class UnsupervisedDataset(Dataset):
-    def __init__(self, img, labels):
+    def __init__(self, img, labels, transform):
         self.img = img
         self.labels = labels
+        self.transform = transform
 
     def __getitem__(self, i):
         return self.img[i][0].cuda(), self.labels[i].cuda()
@@ -120,7 +121,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                 # add pseudolabelling content here
                 if pseudo_data != None:
                     train_data, train_dataloader = combine_datasets(
-                        pseudo_data, train_data, batch_size, transforms)
+                        pseudo_data, train_data, batch_size)
                     train_dataset_size = len(train_data)
                 else:
                     print(
@@ -167,7 +168,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                     preds = torch.argmax(output, dim=1, keepdim=True)
                     outputs.append(preds.T)
                 # pseudo_data, pseudodataloader = append_pseudo_labels(outputs, input1, transform=None)
-                pseudo_data = UnsupervisedDataset(outputs, input1)
+                pseudo_data = UnsupervisedDataset(outputs, input1, transform=transforms)
                 print("Pseudo data generated!")
     # load best model weights
     model.load_state_dict(best_model_wts)
