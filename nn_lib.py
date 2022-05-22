@@ -57,7 +57,7 @@ class UnsupervisedDataset(Dataset):
 
     def __getitem__(self, i):
         if self.transform:
-            self.img = self.transform(self.img)
+            self.img[i][0] = self.transform(self.img[i][0])
         return self.img[i][0].cuda(), self.labels[i].cuda()
 
     def __len__(self):
