@@ -309,10 +309,10 @@ def train_mtask_model(model, train_data, val_data, optimizer, no_epochs,
             labels_preds = torch.argmax(outputs['labels'], dim=1, keepdim=True)
 
             running_loss += loss.item()
-            if "item" in celoss.__dict__:
-                celoss_to_log = celoss.item()
-            else:
+            if type(celoss) == int:
                 celoss_to_log = 0
+            else:
+                celoss_to_log = celoss.item()
             print("Loss {:.4f}  MSE {:.4f} CE {:.4f}".format(loss.item(),
                                                              mseloss.item(),
                                                              celoss_to_log))
