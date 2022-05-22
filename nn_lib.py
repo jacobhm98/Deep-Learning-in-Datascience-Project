@@ -27,17 +27,25 @@ def append_pseudo_labels(pseudolabels, unlabelled_imgs, transform):
     return pseudo_dataset, pseudo_dataloader
 
 
-def combine_datasets(pseudo_dataset, train_dataset, batch_size):
+from torch.utils.data import DataLoader , TensorDataset   
+def append_pseudo_labels(pseudolabels, unlabelled_imgs):
+    '''
+    labels appended to the unlabeled dataset returns dataloader with transforms as needed
+    '''
+    pseudo_dataset = TensorDataset(unlabelled_imgs , pseudolabels)
+    pseudo_dataloader = DataLoader(pseudo_dataset , batch_size = 16, shuffle=True)
+
+    return pseudo_dataset, pseudo_dataloader
+
+def combine_datasets(pseudo_dataset, train_dataset, batch_size, transforms1):
     '''
     combines the two given dataset and returns the combined dataset and combined dataloader.
     '''
-
-    combined_dataset = torch.utils.data.ConcatDataset(
-        [train_dataset, pseudo_dataset])
-    combined_dataloader = DataLoader(dataset=combined_dataset,
-                                     batch_size=batch_size,
-                                     shuffle=True)
-
+    pseudo_dataset.transform = transforms1
+    train_dataset.transform = transforms1
+    combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
+    combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
+                                  shuffle=True)
     return combined_dataset, combined_dataloader
 
 
@@ -67,6 +75,7 @@ Pseudolabelling:
 def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                                 optimizer, no_epochs, device, batch_size,
                                 cat_dog_dict,
+                                transforms,
                                 cat_dog=True,
                                 train_metrics_filename="train_metrics.csv",
                                 val_metrics_filename="val_metrics.csv",
@@ -111,7 +120,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                 # add pseudolabelling content here
                 if pseudo_data != None:
                     train_data, train_dataloader = combine_datasets(
-                        pseudo_data, train_data, batch_size)
+                        pseudo_data, train_data, batch_size, transforms)
                     train_dataset_size = len(train_data)
                 else:
                     print(
