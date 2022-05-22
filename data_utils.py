@@ -100,7 +100,10 @@ def mtask_loss_fxn(inp_batch, model_out, t):
     out_images, out_labels = model_out['images'], model_out['labels']
 
     msefactor = MSE(out_images, inp_batch.images)
-    cefactor = CE(out_labels[inp_batch.labeled_idxs], inp_batch.labels)
+    if len(inp_batch.labeled_idxs) > 0:
+        cefactor = CE(out_labels[inp_batch.labeled_idxs], inp_batch.labels)
+    else:
+        cefactor = 0
 
     return (1 - t) * msefactor + t * cefactor, msefactor, cefactor
 
