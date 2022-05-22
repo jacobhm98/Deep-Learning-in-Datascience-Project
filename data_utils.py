@@ -199,13 +199,14 @@ def gen_cat_dog_label(cat_dog_dict, labels):
     cat_dog_labels : tensor of cats(0) and dogs(1)
     '''
     cat_dog_labels = []
+    print(labels)
     for i in labels:
-        if str(i.item() + 1) in cat_dog_dict['cat']:
+        if str(i + 1) in cat_dog_dict['cat']:
             cat_dog_labels.append(0)
-        elif str(i.item() + 1) in cat_dog_dict['dog']:
+        elif str(i + 1) in cat_dog_dict['dog']:
             cat_dog_labels.append(1)
         else:
-            print(i.item())
+            print(i)
             raise ValueError
 
     return torch.LongTensor(cat_dog_labels)
