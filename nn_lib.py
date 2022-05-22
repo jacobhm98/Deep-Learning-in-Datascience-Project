@@ -501,8 +501,6 @@ def train_model_no_val(model, train_data, loss_fxn,
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=num_workers,
                                   prefetch_factor=prefetch_factor)
-    best_acc = 0.0
-    best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
     val_loss_arr = []
     train_acc_arr = []
@@ -545,15 +543,6 @@ def train_model_no_val(model, train_data, loss_fxn,
         print('Loss: {:.4f} Acc: {:.4f}'.format(
             epoch_loss, epoch_acc))
 
-    print('Best val Acc: {:4f}'.format(best_acc))
-
-    # load best model weights
-    model.load_state_dict(best_model_wts)
-    df_train = pd.DataFrame({
-        'train_loss': train_loss_arr,
-    })
-
-    df_train.to_csv(train_metrics_filename)
     return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
 
 def test_loss_and_accuracy(dataset, model, loss_fxn, device,
