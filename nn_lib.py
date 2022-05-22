@@ -309,13 +309,17 @@ def train_mtask_model(model, train_data, val_data, optimizer, no_epochs,
             labels_preds = torch.argmax(outputs['labels'], dim=1, keepdim=True)
 
             running_loss += loss.item()
+            if type(celoss) == torch.TensorType:
+                celoss_to_log = celoss.item()
+            else:
+                celoss_to_log = 0
             print("Loss {:.4f}  MSE {:.4f} CE {:.4f}".format(loss.item(),
                                                              mseloss.item(),
-                                                             celoss.item()))
+                                                             celoss_to_log))
             progress_bar.set_postfix_str(
                 "Loss {:.4f}  MSE {:.4f} CE {:.4f}".format(loss.item(),
                                                            mseloss.item(),
-                                                           celoss.item()))
+                                                           celoss_to_log))
 
             running_corrects += torch.sum(
                 labels_preds[batch.labeled_idxs].T == batch.labels.data)
