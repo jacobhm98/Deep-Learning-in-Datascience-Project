@@ -56,7 +56,8 @@ class UnsupervisedDataset(Dataset):
         self.transform = transform
 
     def __getitem__(self, i):
-        return self.img[i][0].cuda(), self.labels[i].cuda()
+        print(self.labels[i].cuda())
+        return self.img[i].cuda(), self.labels[i].cuda()
 
     def __len__(self):
         return len(self.labels)
@@ -124,8 +125,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                         pseudo_data, train_data, batch_size)
                     train_dataset_size = len(train_data)
                 else:
-                    print(
-                        "In first epochsdfdfss, unlabelled data not used yet!")
+                    print("In first epochs, unlabelled data not used yet!")
                 for inputs, labels in tqdm(train_dataloader):
                     inputs = inputs.to(device)
                     if cat_dog:
