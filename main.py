@@ -130,7 +130,7 @@ def main():
             train_data, val_data,
             loss_fxn, optimizer,
             no_epochs, device,
-            batch_size, tfs, cat_dog_dict,
+            batch_size,  cat_dog_dict, tfs,
             num_workers=num_workers,
             prefetch_factor=prefetch_factor)
     else:
