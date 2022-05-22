@@ -57,7 +57,7 @@ class UnsupervisedDataset(Dataset):
 
     def __getitem__(self, i):
         print(self.labels[i].cuda())
-        return self.img[i].cuda(), self.labels[i].cuda()
+        return self.img[i][0].cuda(), self.labels[i].cuda()
 
     def __len__(self):
         return len(self.labels)

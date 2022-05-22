@@ -95,7 +95,7 @@ def main():
     prefetch_factor = 2
 
     tfs = transforms.Compose([
-        #transforms.Resize((255,255)),
+        transforms.Resize((255,255)),
         #transforms.ColorJitter(),
         #transforms.GaussianBlur(kernel_size=[5,5]),
         transforms.RandomHorizontalFlip(),
