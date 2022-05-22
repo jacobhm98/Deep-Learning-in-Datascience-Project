@@ -479,6 +479,83 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs,
     return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
 
 
+def train_model_no_val(model, train_data, loss_fxn,
+                              optimizer, no_epochs,
+                device, batch_size, cat_dog_dict,
+                cat_dog=True, train_metrics_filename="train_metrics.csv",
+                val_metrics_filename="val_metrics.csv", num_workers=2,
+                prefetch_factor=2):
+    '''
+    Parameters:
+    cat_dog_dict : {'cat':[cat_id_list], 'dog':[dog_id_list]}
+    Return:
+    Trained model, loss_arr, acc_arr
+    '''
+
+    # If there is a cat dog dict then we want to do classification on 2 species
+    cat_dog = cat_dog_dict is not None
+
+    model.to(device)
+    train_dataset_size = len(train_data)
+    img_size = 255
+    train_dataloader = DataLoader(train_data, batch_size=batch_size,
+                                  shuffle=True, num_workers=num_workers,
+                                  prefetch_factor=prefetch_factor)
+    best_acc = 0.0
+    best_model_wts = copy.deepcopy(model.state_dict())
+    train_loss_arr = []
+    val_loss_arr = []
+    train_acc_arr = []
+    val_acc_arr = []
+
+    progress_bar = tqdm(range(no_epochs))
+    for epoch_i in progress_bar:
+        print("Epoch ", epoch_i)
+        model.train()  # Set model to training mode
+        running_loss = 0.0
+        running_corrects = 0
+        for inputs, labels in tqdm(train_dataloader):
+            inputs = inputs.to(device)
+            if cat_dog:
+                labels = gen_cat_dog_label(cat_dog_dict, labels)
+
+            labels = labels.to(device)
+            # with torch.set_grad_enabled(True):
+            outputs = model(inputs)
+            preds = torch.argmax(outputs, 1, keepdim=True)
+            loss = loss_fxn(outputs, labels)
+
+            # Keep track of loss metric
+            train_loss_arr.append(loss.item())
+
+            # Do backward pass
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            progress_bar.set_postfix_str(loss.item())
+            running_corrects += torch.sum(preds.T == labels.data)
+
+        # Accuracy loss
+        epoch_loss = running_loss / train_dataset_size
+        epoch_acc = running_corrects.double() / train_dataset_size
+        # train_acc_arr.append(epoch_acc)
+
+        print('Loss: {:.4f} Acc: {:.4f}'.format(
+            epoch_loss, epoch_acc))
+
+    print('Best val Acc: {:4f}'.format(best_acc))
+
+    # load best model weights
+    model.load_state_dict(best_model_wts)
+    df_train = pd.DataFrame({
+        'train_loss': train_loss_arr,
+    })
+
+    df_train.to_csv(train_metrics_filename)
+    return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
+
 def test_loss_and_accuracy(dataset, model, loss_fxn, device,
                            cat_dog_dict=None,
                            num_workers=2,
