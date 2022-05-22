@@ -50,13 +50,14 @@ def combine_datasets(pseudo_dataset, train_dataset, batch_size):
 
 
 class UnsupervisedDataset(Dataset):
-    def __init__(self, img, labels, transform):
+    def __init__(self, img, labels, transform = None):
         self.img = img
         self.labels = labels
         self.transform = transform
 
     def __getitem__(self, i):
-        print(self.labels[i].cuda())
+        if self.transform:
+            self.img = self.transform(self.img)
         return self.img[i][0].cuda(), self.labels[i].cuda()
 
     def __len__(self):
@@ -121,9 +122,9 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                 model.train()  # Set model to training model
                 # add pseudolabelling content here
                 if pseudo_data != None:
-                    train_data, train_dataloader = combine_datasets(
-                        pseudo_data, train_data, batch_size)
-                    train_dataset_size = len(train_data)
+                    train_data, train_dataloader = combine_datasets(pseudo_data, train_data, batch_size)
+                    print("combining datasets done")
+                    # train_dataset_size = len(train_data)
                 else:
                     print("In first epochs, unlabelled data not used yet!")
                 for inputs, labels in tqdm(train_dataloader):
