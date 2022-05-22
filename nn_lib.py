@@ -43,6 +43,9 @@ def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     # pseudo_dataset.transform = transforms1
     # train_dataset.transform = transforms1
+    print("Combingin data")
+    print("train_dataset ", train_dataset[0][0].shape)
+    print("pseudo dataset ", pseudo_dataset[0][0].shape)
     combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
     combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
                                   shuffle=True)
@@ -50,15 +53,12 @@ def combine_datasets(pseudo_dataset, train_dataset, batch_size):
 
 
 class UnsupervisedDataset(Dataset):
-    def __init__(self, img, labels, transform = None):
+    def __init__(self, img, labels):
         self.img = img
         self.labels = labels
-        self.transform = transform
 
     def __getitem__(self, i):
-        if self.transform:
-            self.img[i][0] = self.transform(self.img[i][0])
-        return self.img[i][0].cuda(), self.labels[i].cuda()
+        return self.img[i][0], self.labels[i]
 
     def __len__(self):
         return len(self.labels)
@@ -114,6 +114,10 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
     pseudo_data = None
 
     progress_bar = tqdm(range(no_epochs))
+
+    # Set initial combined to be just the labeled data
+    combined_data, combined_dataloader = train_data, train_dataloader
+
     for i in progress_bar:
         for phase in ['train', 'val']:
             if phase == 'train':
@@ -122,12 +126,13 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                 model.train()  # Set model to training model
                 # add pseudolabelling content here
                 if pseudo_data != None:
-                    train_data, train_dataloader = combine_datasets(pseudo_data, train_data, batch_size)
+                    combined_data, combined_dataloader = combine_datasets(
+                        pseudo_data, train_data, batch_size)
                     print("combining datasets done")
                     # train_dataset_size = len(train_data)
                 else:
                     print("In first epochs, unlabelled data not used yet!")
-                for inputs, labels in tqdm(train_dataloader):
+                for inputs, labels in tqdm(combined_dataloader):
                     inputs = inputs.to(device)
                     if cat_dog:
                         labels = gen_cat_dog_label(cat_dog_dict, labels)
@@ -156,9 +161,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
 
                 # print('{} Loss: {:.4f}'.format(phase, epoch_loss))
             else:
-                print("reaching here!!")
                 model.eval()  # Set model to evaluate mode
-                print("crossed this")
 
                 input1 = []
                 outputs = []
@@ -168,9 +171,14 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                     input1.append(inputs)
                     preds = torch.argmax(output, dim=1, keepdim=True)
                     outputs.append(preds.T)
+
                 # pseudo_data, pseudodataloader = append_pseudo_labels(outputs, input1, transform=None)
-                pseudo_data = UnsupervisedDataset(outputs, input1, transform=transforms)
+                # Converting outputs to list
+                out_list = torch.hstack(outputs)
+                out_list = out_list[0].tolist()
+                pseudo_data = UnsupervisedDataset(val_data, out_list)
                 print("Pseudo data generated!")
+
     # load best model weights
     model.load_state_dict(best_model_wts)
     df_train = pd.DataFrame({

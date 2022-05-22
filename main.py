@@ -108,7 +108,8 @@ def main():
     train_data, val_data, test_data = data_utils.download_dataset(
         augmentation=True,
         in_memory=False,
-        train_transforms=tfs
+        train_transforms=tfs,
+        val_transforms=tfs
     )
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed

@@ -220,7 +220,8 @@ def output_jpg_dir_of_training_data(output_path):
 
 
 def download_dataset(augmentation=False, in_memory=False,
-                     train_transforms=None, num_train_examples=80):
+                     train_transforms=None, num_train_examples=80,
+                     val_transforms=None, test_transforms=None):
     '''
     Parameters:
     augumentation : do you to perform data augumentation like cropping etc.., set to true
@@ -263,24 +264,25 @@ def download_dataset(augmentation=False, in_memory=False,
                                    std=std)
 
     if augmentation:
-        train_transform = transforms.Compose([
+        train_transforms_list = [train_transforms] if train_transforms else []
+        train_transforms_list.extend([
             train_transforms,
             transforms.ToTensor(),
             transforms.Resize((img_size, img_size)),
             norm_tf
         ])
-        test_transform = transforms.Compose([
+        val_transforms_list = [val_transforms] if val_transforms else []
+        val_transforms_list.extend([
             transforms.ToTensor(),
             transforms.Resize((img_size, img_size)),
             norm_tf
         ])
+        train_transform = transforms.Compose(train_transforms_list)
+        val_transform = transforms.Compose(val_transforms_list)
+        test_transform = base_transforms
     else:
-        train_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Resize((img_size, img_size)),
-            norm_tf
-        ])
-        test_transform = train_transform
+        train_transform = base_transforms
+        test_transform = base_transforms
 
     test_data = datasets.OxfordIIITPet(root="data", split="test",
                                        download=True, transform=test_transform)
@@ -293,11 +295,12 @@ def download_dataset(augmentation=False, in_memory=False,
     print("Splitting to train, val, test")
     train_data, val_data = train_val_stratified_breed_split(all_data,
                                                             train_transform,
-                                                            test_transform, num_ex =num_train_examples)  
+                                                            val_transform, num_ex
+                                                            =num_train_examples)
 
-
-    demo_transformations(train_data)
-
+    # demo_transformations(train_data)
+    # demo_transformations(val_data)
+    # demo_transformations(test_data)
     return train_data, val_data, test_data
 
 
