@@ -27,27 +27,37 @@ def append_pseudo_labels(pseudolabels, unlabelled_imgs, transform):
     return pseudo_dataset, pseudo_dataloader
 
 
+from torch.utils.data import DataLoader , TensorDataset   
+def append_pseudo_labels(pseudolabels, unlabelled_imgs):
+    '''
+    labels appended to the unlabeled dataset returns dataloader with transforms as needed
+    '''
+    pseudo_dataset = TensorDataset(unlabelled_imgs , pseudolabels)
+    pseudo_dataloader = DataLoader(pseudo_dataset , batch_size = 16, shuffle=True)
+
+    return pseudo_dataset, pseudo_dataloader
+
 def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     combines the two given dataset and returns the combined dataset and combined dataloader.
     '''
-
-    combined_dataset = torch.utils.data.ConcatDataset(
-        [train_dataset, pseudo_dataset])
-    combined_dataloader = DataLoader(dataset=combined_dataset,
-                                     batch_size=batch_size,
-                                     shuffle=True)
-
+    # pseudo_dataset.transform = transforms1
+    # train_dataset.transform = transforms1
+    combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
+    combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
+                                  shuffle=True)
     return combined_dataset, combined_dataloader
 
 
 class UnsupervisedDataset(Dataset):
-    def __init__(self, img, labels):
+    def __init__(self, img, labels, transform):
         self.img = img
         self.labels = labels
+        self.transform = transform
 
     def __getitem__(self, i):
-        return self.img[i][0].cuda(), self.labels[i].cuda()
+        print(self.labels[i].cuda())
+        return self.img[i].cuda(), self.labels[i].cuda()
 
     def __len__(self):
         return len(self.labels)
@@ -67,6 +77,7 @@ Pseudolabelling:
 def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                                 optimizer, no_epochs, device, batch_size,
                                 cat_dog_dict,
+                                transforms,
                                 cat_dog=True,
                                 train_metrics_filename="train_metrics.csv",
                                 val_metrics_filename="val_metrics.csv",
@@ -114,8 +125,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                         pseudo_data, train_data, batch_size)
                     train_dataset_size = len(train_data)
                 else:
-                    print(
-                        "In first epochsdfdfss, unlabelled data not used yet!")
+                    print("In first epochs, unlabelled data not used yet!")
                 for inputs, labels in tqdm(train_dataloader):
                     inputs = inputs.to(device)
                     if cat_dog:
@@ -158,7 +168,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                     preds = torch.argmax(output, dim=1, keepdim=True)
                     outputs.append(preds.T)
                 # pseudo_data, pseudodataloader = append_pseudo_labels(outputs, input1, transform=None)
-                pseudo_data = UnsupervisedDataset(outputs, input1)
+                pseudo_data = UnsupervisedDataset(outputs, input1, transform=transforms)
                 print("Pseudo data generated!")
     # load best model weights
     model.load_state_dict(best_model_wts)
