@@ -128,15 +128,8 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             model.train()  # Set model to training model
             # add pseudolabelling content here
             if pseudo_data != None and phase == 11:
-                print("First element of :")
-                print("Pseudo dataset ")
-                print(next(iter(pseudo_data)))
-                print("Train dataset ")
-                print(next(iter(train_data)))
+                
                 combined_data, combined_dataloader = combine_datasets(pseudo_data, train_data, batch_size)
-                print("Combined dataset ")
-                print(next(iter(combined_data)))
-                print("combining datasets done")
                 train_dataset_size = len(combined_data)
             else:
                 print("In first training phase, unlabelled data not used yet!")
