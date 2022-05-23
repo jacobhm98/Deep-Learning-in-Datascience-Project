@@ -1,6 +1,7 @@
 from doctest import OutputChecker
 import imp
 from importlib.util import set_loader
+from statistics import mode
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, Dataset
@@ -202,30 +203,26 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 outputs = model(inputs)
-                print(labels)
-                print("labels size = "+str(labels.size()))
-                print("----------")
                 
                 preds = torch.argmax(outputs, 1, keepdim=True)
-                print(preds)
-                print("preds size = "+str(preds.size()))
                 corrects += torch.sum(preds.T == labels.data)
             epoch_acc = corrects.double() / test_dataset_size
             print("TEST ACCURACY BEFORE pseudolabelling is "+str(epoch_acc))
             # pseudolabelling happens here...
               # Set model to evaluate mode
-            model.train()
+            # model.train()
+            model.eval()
             input1 = []
             outputs = []
             for inputs, labels in val_dataloader:
                 inputs, labels = inputs.to(device), labels.to(device)
                 output = model(inputs)
-                pseudo_classes = torch.LongTensor([torch.argmax(a).item() for a in output]).cuda()
-                pseudo_loss = loss_fxn(output, pseudo_classes)
-                pseudo_loss *= alpha_weight(phase)
-                optimizer.zero_grad()
-                pseudo_loss.backward()
-                optimizer.step()
+                # pseudo_classes = torch.LongTensor([torch.argmax(a).item() for a in output]).cuda()
+                # pseudo_loss = loss_fxn(output, pseudo_classes)
+                # pseudo_loss *= alpha_weight(phase)
+                # optimizer.zero_grad()
+                # pseudo_loss.backward()
+                # optimizer.step()
                 input1.append(inputs)
                 preds = torch.argmax(output, dim=1, keepdim=True)
                 outputs.append(preds.T)
