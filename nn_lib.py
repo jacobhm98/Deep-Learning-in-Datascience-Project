@@ -167,6 +167,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                     # test accuracy with pseudolabelling
                     corrects = 0
                     for inputs, labels in test_dataloader:
+                        inputs = inputs.to(device)
                         labels = labels.to(device)
                         outputs = model(inputs)
                         preds = torch.argmax(outputs, 1, keepdim=True)
@@ -177,6 +178,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 # test accuracy without pseudolabelling
                 corrects = 0
                 for inputs, labels in test_dataloader:
+                    inputs = inputs.to(device)
                     labels = labels.to(device)
                     outputs = model(inputs)
                     preds = torch.argmax(outputs, 1, keepdim=True)
