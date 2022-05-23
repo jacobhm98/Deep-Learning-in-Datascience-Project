@@ -75,7 +75,7 @@ Pseudolabelling:
 '''
 
 
-def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
+def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn,
                                 optimizer, no_epochs, device, batch_size,
                                 cat_dog_dict,
                                 transforms,
@@ -97,14 +97,19 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
     model.to(device)
     train_dataset_size = len(train_data)
     val_dataset_size = len(val_data)
+    test_dataset_size = len(test_data)
 
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
-                                  shuffle=True, num_workers=8,
+                                  shuffle=True, num_workers=0,
                                   prefetch_factor=2)
     # here is val_data is used as unlabelled data, hence the test_dataloader is unlabelled data
-    test_dataloader = DataLoader(val_data, batch_size=batch_size,
+    val_dataloader = DataLoader(val_data, batch_size=batch_size,
                                  shuffle=True,
-                                 num_workers=8, prefetch_factor=2)
+                                 num_workers=0, prefetch_factor=2)
+
+    test_dataloader = DataLoader(test_data, batch_size=batch_size,
+                                 shuffle=True,
+                                 num_workers=0, prefetch_factor=2)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
     train_loss_arr = []
@@ -119,19 +124,17 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
     combined_data, combined_dataloader = train_data, train_dataloader
 
     for i in progress_bar:
-        for phase in range(20):
-            if phase <= 10:
+        for phase in range(21):
+            if phase < 10 or phase > 10:
                 running_loss = 0.0
                 running_corrects = 0
                 model.train()  # Set model to training model
                 # add pseudolabelling content here
                 if pseudo_data != None:
-                    combined_data, combined_dataloader = combine_datasets(
-                        pseudo_data, train_data, batch_size)
+                    combined_data, combined_dataloader = combine_datasets(pseudo_data, train_data, batch_size)
                     print("combining datasets done")
-                    # train_dataset_size = len(train_data)
                 else:
-                    print("In first epochs, unlabelled data not used yet!")
+                    print("In first training phase, unlabelled data not used yet!")
                 for inputs, labels in tqdm(combined_dataloader):
                     inputs = inputs.to(device)
                     if cat_dog:
@@ -155,17 +158,37 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                     progress_bar.set_postfix_str(loss.item())
                     running_corrects += torch.sum(preds.T == labels.data)
                 # Accuracy loss
-                # epoch_loss = running_loss / train_dataset_size
+                epoch_loss = running_loss / train_dataset_size
                 # epoch_acc = running_corrects.double() / train_dataset_size
                 # train_acc_arr.append(epoch_acc)
 
-                # print('{} Loss: {:.4f}'.format(phase, epoch_loss))
+                print('Train Loss: {:.4f}'.format(epoch_loss))
+                if phase == 20:
+                    # test accuracy with pseudolabelling
+                    corrects = 0
+                    for inputs, labels in test_dataloader:
+                        labels = labels.to(device)
+                        outputs = model(inputs)
+                        preds = torch.argmax(outputs, 1, keepdim=True)
+                        corrects += torch.sum(preds.T == labels.data)
+                    epoch_acc = running_corrects.double() / test_dataset_size
+                    print("test accuracy after pseudolabelling is "+str(epoch_acc))
             else:
+                # test accuracy without pseudolabelling
+                corrects = 0
+                for inputs, labels in test_dataloader:
+                    labels = labels.to(device)
+                    outputs = model(inputs)
+                    preds = torch.argmax(outputs, 1, keepdim=True)
+                    corrects += torch.sum(preds.T == labels.data)
+                epoch_acc = running_corrects.double() / test_dataset_size
+                print("test accuracy before pseudolabelling is "+str(epoch_acc))
+                # pseudolabelling happens here...
                 model.eval()  # Set model to evaluate mode
 
                 input1 = []
                 outputs = []
-                for inputs, labels in test_dataloader:
+                for inputs, labels in val_dataloader:
                     inputs, labels = inputs.to(device), labels.to(device)
                     output = model(inputs)
                     input1.append(inputs)
@@ -178,6 +201,7 @@ def train_model_pseudolabelling(model, train_data, val_data, loss_fxn,
                 out_list = out_list[0].tolist()
                 pseudo_data = UnsupervisedDataset(val_data, out_list)
                 print("Pseudo data generated!")
+
 
     # load best model weights
     model.load_state_dict(best_model_wts)

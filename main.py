@@ -128,7 +128,7 @@ def main():
     if no_classes == 2 or no_classes == 37:
         trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model_pseudolabelling(
             model,
-            train_data, val_data,
+            train_data, val_data, test_data,
             loss_fxn, optimizer,
             no_epochs, device,
             batch_size, cat_dog_dict, tfs,
