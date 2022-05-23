@@ -139,6 +139,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
     combined_data, combined_dataloader = train_data, train_dataloader
 
     # for i in progress_bar:
+    original_model_state = copy.deepcopy(model.state_dict())
     for phase in range(21):
         if phase < 10 or phase > 10:
             running_loss = 0.0
@@ -228,6 +229,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 input1.append(inputs)
                 preds = torch.argmax(output, dim=1, keepdim=True)
                 outputs.append(preds.T)
+            model.load_state_dict(original_model_state)
 
             # pseudo_data, pseudodataloader = append_pseudo_labels(outputs, input1, transform=None)
             # Converting outputs to list
