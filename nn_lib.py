@@ -172,7 +172,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                     outputs = model(inputs)
                     preds = torch.argmax(outputs, 1, keepdim=True)
                     corrects += torch.sum(preds.T == labels.data)
-                epoch_acc = running_corrects.double() / test_dataset_size
+                epoch_acc = corrects.double() / test_dataset_size
                 print("TEST ACCURACY AFTER pseudolabelling is "+str(epoch_acc))
         else:
             # test accuracy without pseudolabelling
@@ -183,7 +183,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 outputs = model(inputs)
                 preds = torch.argmax(outputs, 1, keepdim=True)
                 corrects += torch.sum(preds.T == labels.data)
-            epoch_acc = running_corrects.double() / test_dataset_size
+            epoch_acc = corrects.double() / test_dataset_size
             print("TEST ACCURACY BEFORE pseudolabelling is "+str(epoch_acc))
             # pseudolabelling happens here...
             model.eval()  # Set model to evaluate mode
