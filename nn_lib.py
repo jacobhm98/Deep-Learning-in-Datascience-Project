@@ -43,9 +43,6 @@ def combine_datasets(pseudo_dataset, train_dataset, batch_size):
     '''
     # pseudo_dataset.transform = transforms1
     # train_dataset.transform = transforms1
-    print("Combingin data")
-    print("train_dataset ", train_dataset[0][0].shape)
-    print("pseudo dataset ", pseudo_dataset[0][0].shape)
     combined_dataset = torch.utils.data.ConcatDataset([train_dataset, pseudo_dataset])
     combined_dataloader = DataLoader(dataset=combined_dataset,batch_size=batch_size,
                                   shuffle=True)
@@ -164,6 +161,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
 
             print('Train Loss: {:.4f}'.format(epoch_loss))
             if phase == 20:
+                model.eval()
                 # test accuracy with pseudolabelling
                 corrects = 0
                 for inputs, labels in test_dataloader:
@@ -175,6 +173,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 epoch_acc = corrects.double() / test_dataset_size
                 print("TEST ACCURACY AFTER pseudolabelling is "+str(epoch_acc))
         else:
+            model.eval()
             # test accuracy without pseudolabelling
             corrects = 0
             for inputs, labels in test_dataloader:
@@ -186,7 +185,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             epoch_acc = corrects.double() / test_dataset_size
             print("TEST ACCURACY BEFORE pseudolabelling is "+str(epoch_acc))
             # pseudolabelling happens here...
-            model.eval()  # Set model to evaluate mode
+              # Set model to evaluate mode
 
             input1 = []
             outputs = []
