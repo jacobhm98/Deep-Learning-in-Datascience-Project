@@ -109,7 +109,8 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                                  num_workers=0, prefetch_factor=2)
     best_acc = 0.0
     best_model_wts = copy.deepcopy(model.state_dict())
-    train_loss_arr = []
+    train_loss_arr_bef = []
+    train_loss_arr_aft = []
     val_loss_arr = []
     train_acc_arr = []
     val_acc_arr = []
@@ -121,7 +122,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
     combined_data, combined_dataloader = train_data, train_dataloader
 
     # for i in progress_bar:
-    for phase in range(41):
+    for phase in range(21):
         if phase < 10 or phase > 10:
             running_loss = 0.0
             running_corrects = 0
@@ -145,7 +146,10 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 loss = loss_fxn(outputs, labels)
 
                 # Keep track of loss metric
-                train_loss_arr.append(loss.item())
+                if phase<10:
+                    train_loss_arr_bef.append(loss.item())
+                else:
+                    train_loss_arr_aft.append(loss.item())
 
                 # Do backward pass
                 optimizer.zero_grad()
@@ -161,7 +165,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             # train_acc_arr.append(epoch_acc)
 
             print('Train Loss: {:.4f}'.format(epoch_loss))
-            if phase == 40:
+            if phase == 20:
                 model.eval()
                 # test accuracy with pseudolabelling
                 corrects = 0
@@ -208,17 +212,11 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
     # load best model weights
     model.load_state_dict(best_model_wts)
     df_train = pd.DataFrame({
-        'train_loss': train_loss_arr,
-    })
-
-    df_val = pd.DataFrame({
-        'val_acc': val_acc_arr,
-        'val loss': val_loss_arr
+        'train_loss_bef_pseudo': train_loss_arr_bef,
+        'train_loss_aft_pseudo': train_loss_arr_aft,
     })
     df_train.to_csv(train_metrics_filename)
-    df_val.to_csv(val_metrics_filename)
-    return model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr
-
+    return model, train_acc_arr, train_loss_arr_bef, val_acc_arr, val_loss_arr
 
 def is_layer_frozen(layer: nn.Module):
     return all([x.requires_grad == True for x in layer.parameters()])
