@@ -1,3 +1,4 @@
+from doctest import OutputChecker
 import imp
 from importlib.util import set_loader
 import torch
@@ -73,6 +74,19 @@ Pseudolabelling:
 .- make predictions again
 .- test the accuracy, loop for n epoches
 '''
+T1 = 12
+T2 = 17
+af = 3
+
+def alpha_weight(epoch):
+    if epoch < T1:
+        return 0.0
+    elif epoch > T2:
+        return af
+    else:
+         return ((epoch-T1) / (T2-T1))*af
+
+
 
 
 def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn,
@@ -132,7 +146,6 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             model.train()  # Set model to training model
             # add pseudolabelling content here
             if pseudo_data != None and phase == 11:
-                
                 combined_data, combined_dataloader = combine_datasets(pseudo_data, train_data, batch_size)
                 train_dataset_size = len(combined_data)
             else:
@@ -144,6 +157,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
 
                 labels = labels.to(device)
                 # with torch.set_grad_enabled(True):
+                optimizer.zero_grad()
                 outputs = model(inputs)
                 preds = torch.argmax(outputs, 1, keepdim=True)
                 loss = loss_fxn(outputs, labels)
@@ -155,7 +169,6 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                     train_loss_arr_aft.append(loss.item())
 
                 # Do backward pass
-                optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
@@ -175,6 +188,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 for inputs, labels in test_dataloader:
                     inputs = inputs.to(device)
                     labels = labels.to(device)
+                    optimizer.zero_grad()
                     outputs = model(inputs)
                     preds = torch.argmax(outputs, 1, keepdim=True)
                     corrects += torch.sum(preds.T == labels.data)
@@ -194,12 +208,18 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             print("TEST ACCURACY BEFORE pseudolabelling is "+str(epoch_acc))
             # pseudolabelling happens here...
               # Set model to evaluate mode
-
+            model.train()
             input1 = []
             outputs = []
             for inputs, labels in val_dataloader:
                 inputs, labels = inputs.to(device), labels.to(device)
                 output = model(inputs)
+                pseudo_classes = torch.LongTensor([torch.argmax(a).item() for a in output]).cuda()
+                pseudo_loss = loss_fxn(OutputChecker, pseudo_classes)
+                pseudo_loss *= alpha_weight(phase)
+                optimizer.zero_grad()
+                pseudo_loss.backward()
+                optimizer.step()
                 input1.append(inputs)
                 preds = torch.argmax(output, dim=1, keepdim=True)
                 outputs.append(preds.T)
@@ -209,6 +229,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             out_list = torch.hstack(outputs)
             out_list = out_list[0].tolist()
             pseudo_data = UnsupervisedDataset(val_data, out_list)
+            print("pseudolabels")
             print(out_list)
             print("Pseudo data generated!")
 
