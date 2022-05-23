@@ -204,9 +204,10 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 print(labels)
                 print("labels size = "+str(labels.size()))
                 print("----------")
-                print(outputs)
-                print("outputs size = "+str(outputs.size()))
+                
                 preds = torch.argmax(outputs, 1, keepdim=True)
+                print(preds)
+                print("preds size = "+str(preds.size()))
                 corrects += torch.sum(preds.T == labels.data)
             epoch_acc = corrects.double() / test_dataset_size
             print("TEST ACCURACY BEFORE pseudolabelling is "+str(epoch_acc))
