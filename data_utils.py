@@ -199,7 +199,6 @@ def gen_cat_dog_label(cat_dog_dict, labels):
     cat_dog_labels : tensor of cats(0) and dogs(1)
     '''
     cat_dog_labels = []
-    print(labels)
     for i in labels:
         if str(i.item() + 1) in cat_dog_dict['cat']:
             cat_dog_labels.append(0)
