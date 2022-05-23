@@ -137,6 +137,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 print("Combined dataset ")
                 print(next(iter(combined_data)))
                 print("combining datasets done")
+                train_dataset_size = len(combined_data)
             else:
                 print("In first training phase, unlabelled data not used yet!")
             for inputs, labels in tqdm(combined_dataloader):
