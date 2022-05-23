@@ -161,7 +161,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             # train_acc_arr.append(epoch_acc)
 
             print('Train Loss: {:.4f}'.format(epoch_loss))
-            if phase == 20:
+            if phase == 40:
                 model.eval()
                 # test accuracy with pseudolabelling
                 corrects = 0
