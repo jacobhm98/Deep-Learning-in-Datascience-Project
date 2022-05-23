@@ -215,7 +215,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 inputs, labels = inputs.to(device), labels.to(device)
                 output = model(inputs)
                 pseudo_classes = torch.LongTensor([torch.argmax(a).item() for a in output]).cuda()
-                pseudo_loss = loss_fxn(OutputChecker, pseudo_classes)
+                pseudo_loss = loss_fxn(output, pseudo_classes)
                 pseudo_loss *= alpha_weight(phase)
                 optimizer.zero_grad()
                 pseudo_loss.backward()
