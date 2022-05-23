@@ -34,6 +34,8 @@ def append_pseudo_labels(pseudolabels, unlabelled_imgs):
     labels appended to the unlabeled dataset returns dataloader with transforms as needed
     '''
     pseudo_dataset = TensorDataset(unlabelled_imgs , pseudolabels)
+    print("pseudolabels")
+    print(pseudolabels)
     pseudo_dataloader = DataLoader(pseudo_dataset , batch_size = 16, shuffle=True)
 
     return pseudo_dataset, pseudo_dataloader
