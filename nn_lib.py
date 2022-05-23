@@ -121,7 +121,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
     combined_data, combined_dataloader = train_data, train_dataloader
 
     # for i in progress_bar:
-    for phase in range(21):
+    for phase in range(31):
         if phase < 10 or phase > 10:
             running_loss = 0.0
             running_corrects = 0
