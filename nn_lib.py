@@ -233,8 +233,6 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             out_list = torch.hstack(outputs)
             out_list = out_list[0].tolist()
             pseudo_data = UnsupervisedDataset(val_data, out_list)
-            print("pseudolabels")
-            print(out_list)
             print("Pseudo data generated!")
 
 
