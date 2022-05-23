@@ -202,8 +202,10 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 labels = labels.to(device)
                 outputs = model(inputs)
                 print(labels)
+                print("labels size = "+str(labels.size()))
                 print("----------")
                 print(outputs)
+                print("outputs size = "+str(outputs.size()))
                 preds = torch.argmax(outputs, 1, keepdim=True)
                 corrects += torch.sum(preds.T == labels.data)
             epoch_acc = corrects.double() / test_dataset_size
