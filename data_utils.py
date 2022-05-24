@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision import transforms
 from timm.data.transforms_factory import create_transform
+from PIL import Image
 from torchvision.utils import save_image
 import matplotlib.pyplot as plt
 from torch.utils.data.dataset import Dataset
@@ -62,15 +63,19 @@ def train_val_split(train_dataset):
     return torch.utils.data.random_split(train_dataset, lengths=[train_size,
                                                                  val_size])
 
+
 class TrueUnsupervisedDataset(Dataset):
     """
     Wraps  around a labeled dataset containing (x,y) pairs
     And makes it a dataset containing only x elements
     """
+
     def __init__(self, ds):
         self.ds = ds
+
     def __getitem__(self, i):
         return self.ds[i][0]
+
     def __len__(self):
         return len(self.ds)
 
@@ -80,18 +85,22 @@ class MtaskBatch:
     Batch used foe trainining when multitasking between classification
     and autoencoding
     """
+
     def __init__(self, images, labels, labeled_idxs, unlabeled_idxs):
         self.images = images
         self.labels = labels
         self.unlabeled_idxs = unlabeled_idxs
         self.labeled_idxs = labeled_idxs
+
     def to(self, device):
         self.images = self.images.to(device)
         if len(self.labels) > 0:
             self.labels = self.labels.to(device)
 
+
 MSE = torch.nn.MSELoss()
 CE = torch.nn.CrossEntropyLoss()
+
 
 def mtask_loss_fxn(inp_batch, model_out, t):
     """
@@ -144,15 +153,17 @@ def mtask_train_dl(labeled_ds, unlabeled_ds, batch_size, num_workers=0, prefetch
     dl = DataLoader(torch.utils.data.ConcatDataset([labeled_ds,
                                                     TrueUnsupervisedDataset(
                                                         unlabeled_ds)]), batch_size=batch_size,
-                                  shuffle=True, num_workers=num_workers,
-                                  prefetch_factor=prefetch_factor, collate_fn=mtask_collate_fn)
+                    shuffle=True, num_workers=num_workers,
+                    prefetch_factor=prefetch_factor, collate_fn=mtask_collate_fn)
     return dl
+
 
 class CustomDataset(Dataset):
     """
     Takes a dataset as input as well as a list of indexes
     and creates a dataset containing only those indexes with a transform
     """
+
     def __init__(self, idxlist, dataloader_, transform):
         self.idx_list = idxlist
         self.dataloader = dataloader_
@@ -167,7 +178,7 @@ class CustomDataset(Dataset):
 
 
 def train_val_stratified_breed_split(train_dataloader, train_transform,
-                                     test_transform, num_ex = 80):
+                                     test_transform, num_ex=80):
     seed_everything(0)
     # input: trainval dataloader
     # Taka num_ex samples out of each class for train_set (default = 20)
@@ -178,7 +189,7 @@ def train_val_stratified_breed_split(train_dataloader, train_transform,
     train_idx = []
     validation_idx = []
 
-    count_per_label = defaultdict(lambda : 0)
+    count_per_label = defaultdict(lambda: 0)
 
     for i, (dat, lab) in enumerate(train_dataloader):
         if count_per_label[lab] < num_ex:
@@ -189,6 +200,7 @@ def train_val_stratified_breed_split(train_dataloader, train_transform,
 
     return CustomDataset(train_idx, train_dataloader, train_transform), CustomDataset(
         validation_idx, train_dataloader, test_transform)
+
 
 def gen_cat_dog_label(cat_dog_dict, labels):
     '''
@@ -220,7 +232,7 @@ def output_jpg_dir_of_training_data(output_path):
 
 def download_dataset(augmentation=False, in_memory=False,
                      train_transforms=None, num_train_examples=80,
-                     val_transforms=None, test_transforms=None):
+                     val_transforms=None, test_transforms=None, img_size=255):
     '''
     Parameters:
     augumentation : do you to perform data augumentation like cropping etc.., set to true
@@ -230,7 +242,6 @@ def download_dataset(augmentation=False, in_memory=False,
     train and test OxfordIIITPet dataset
     '''
     print("Downloading datasets")
-    img_size = 255
     all_data = datasets.OxfordIIITPet(root="data", split="trainval",
                                       download=True)
 
@@ -301,6 +312,49 @@ def download_dataset(augmentation=False, in_memory=False,
     # demo_transformations(val_data)
     # demo_transformations(test_data)
     return train_data, val_data, test_data
+
+
+def read_in_generated_images(path):
+    to_tensor = transforms.ToTensor()
+    generated_images = []
+    classes = os.listdir(path)
+    for label, class_name in enumerate(sorted(classes)):
+        images = os.listdir(os.path.join(path, class_name))
+        for image in images:
+            img = Image.open(os.path.join(path, class_name, image))
+            img = to_tensor(img)
+            generated_images.append((img, label))
+    return generated_images
+
+
+def read_in_cropped_images(path):
+    files_list = os.listdir(path)
+    cropped_images = []
+    curr_class = None
+    class_counter = -1
+    for files in sorted(files_list):
+        x = files.rsplit('_', 1)[0]
+        if x != curr_class:
+            curr_class = x
+            class_counter += 1
+        img = Image.open(os.path.join(path, files))
+
+
+
+class CombinedDataset(torch.utils.data.Dataset):
+    def __init__(self, path_to_generated_images, path_to_orig_images):
+        super(CombinedDataset, self).__init__()
+        self.orig_data = orig_train_data
+        self.generated_data = read_in_generated_images(path_to_generated_images)
+
+    def __len__(self):
+        return len(self.orig_data) + len(self.generated_data)
+
+    def __getitem__(self, idx):
+        if idx < len(self.orig_data):
+            return self.orig_data[idx]
+        else:
+            return self.generated_data[idx - len(self.orig_data)]
 
 
 class ListDataset():

@@ -72,8 +72,8 @@ def investigate_data_augumentation_effect():
     no_classes = 2
     file = str(2)+"_aug"
     train_aug(True, no_classes, file)
-    # with different data augumentation -> check normalisation transform
-    # without data augumentation
+    # with different data augmentation -> check normalisation transform
+    # without data augmentation
     file = str(2)+"_no_aug"
     train_aug(False, no_classes, file)
 
@@ -87,7 +87,7 @@ def main():
     batch_size = 64
     no_epochs = 10
     loss_fxn = nn.CrossEntropyLoss()
-    model_name = 'resnet18'
+    model_name = 'resnet34'
     cat_dog_dict = None
 
     # Set these according to your machine needs ( collab needs num_workers=2)
@@ -109,8 +109,10 @@ def main():
         augmentation=True,
         in_memory=False,
         train_transforms=tfs,
-        val_transforms=tfs
+        val_transforms=tfs,
+        img_size=255
     )
+    #train_data = data_utils.CombinedDataset("data/generated_images", train_data)
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
     if no_classes == 2:
@@ -118,7 +120,7 @@ def main():
 
     # use GPU if available else use CPU
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cuda"
+    device = "cpu"
     # Download the pretrained model, where you can either freeze the
     # previous layers or fine tune the whole network,
     # by setting the freeze variable
@@ -126,9 +128,9 @@ def main():
                                       no_classes, fine_tune_batch_norm=True)
 
     if no_classes == 2 or no_classes == 37:
-        trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model_pseudolabelling(
+        trained_model, train_acc_arr, train_loss_arr, val_acc_arr, val_loss_arr = train_model(
             model,
-            train_data, val_data, test_data,
+            train_data, val_data,
             loss_fxn, optimizer,
             no_epochs, device,
             batch_size, cat_dog_dict, tfs,

@@ -455,8 +455,8 @@ def train_model(model, train_data, val_data, loss_fxn, optimizer, no_epochs,
 
     model.to(device)
     train_dataset_size = len(train_data)
+    print(train_dataset_size)
     val_dataset_size = len(val_data)
-    img_size = 255
     train_dataloader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, num_workers=num_workers,
                                   prefetch_factor=prefetch_factor)
