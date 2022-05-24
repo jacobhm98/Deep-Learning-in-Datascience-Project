@@ -95,7 +95,7 @@ def main():
     prefetch_factor = 2
 
 
-    train_data, val_data, test_data = data_utils.create_combined_dataset("data/generated_images", "data/cropped_images")
+    train_data, val_data, test_data = data_utils.create_combined_dataset("data/generated_images_half", "data/cropped_images")
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
     if no_classes == 2:
@@ -118,10 +118,11 @@ def main():
             no_epochs, device,
             batch_size, cat_dog_dict,
             num_workers=0,
-            prefetch_factor=2)
+            prefetch_factor=2, train_metrics_filename="train_metrics_no_generated.csv", val_metrics_filename="val_metrics_no_generated.csv")
     else:
         raise ValueError("no_classes needs to be either 2 or 37")
     torch.save(trained_model, "models/trained_model.model")
+    print(test_loss_and_accuracy(test_data, trained_model, loss_fxn, device))
     print("Model trained!!")
 
 

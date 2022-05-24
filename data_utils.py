@@ -344,15 +344,25 @@ def read_in_cropped_images(path):
     return cropped_images
 
 
-def create_combined_dataset(path_to_generated_images, path_to_original_images, test_percentage=0.1, val_percentage=0.1):
+def create_combined_dataset(path_to_generated_images, path_to_original_images, val_percentage=0.2):
     dataset = CombinedDataset(path_to_generated_images, path_to_original_images)
-    test_size = int(len(dataset) * test_percentage)
     val_size = int(len(dataset) * val_percentage)
-    train_size = len(dataset) - test_size - val_size
-    train_set, val_set, test_set = torch.utils.data.random_split(dataset, [train_size, val_size, test_size])
+    train_size = len(dataset) - val_size
+    torch.manual_seed(0)
+    train_set, val_set = torch.utils.data.random_split(dataset, [train_size, val_size])
+    test_set = TestSetCropped("data/cropped_images_test")
     return train_set, val_set, test_set
 
+class TestSetCropped(torch.utils.data.Dataset):
+    def __init__(self, path_to_test_set):
+        super(TestSetCropped, self).__init__()
+        self.data = read_in_cropped_images(path_to_test_set)
 
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx]
 
 
 class CombinedDataset(torch.utils.data.Dataset):
