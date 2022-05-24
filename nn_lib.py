@@ -156,6 +156,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 inputs = inputs.to(device)
                 if cat_dog:
                     labels = gen_cat_dog_label(cat_dog_dict, labels)
+                print(labels)
 
                 labels = labels.to(device)
                 # with torch.set_grad_enabled(True):
