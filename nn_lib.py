@@ -141,7 +141,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
 
     # for i in progress_bar:
     original_model_state = copy.deepcopy(model.state_dict())
-    for phase in range(21):
+    for phase in range(31):
         if phase < 10 or phase > 10:
             running_loss = 0.0
             running_corrects = 0
@@ -184,7 +184,7 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             # train_acc_arr.append(epoch_acc)
 
             print('Train Loss: {:.4f}'.format(epoch_loss))
-            if phase == 20:
+            if phase == 30:
                 model.eval()
                 # test accuracy with pseudolabelling
                 corrects = 0
