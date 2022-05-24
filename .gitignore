@@ -168,3 +168,4 @@ data/
 
 gans_training/*.png
 gans_training/*.pkl
+stylegan2-ada
