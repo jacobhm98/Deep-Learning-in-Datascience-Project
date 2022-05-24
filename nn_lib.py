@@ -190,6 +190,8 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
                 corrects = 0
                 for inputs, labels in test_dataloader:
                     inputs = inputs.to(device)
+                    if cat_dog:
+                        labels = gen_cat_dog_label(cat_dog_dict, labels)
                     labels = labels.to(device)
                     outputs = model(inputs)
                     preds = torch.argmax(outputs, 1, keepdim=True)
@@ -202,6 +204,8 @@ def train_model_pseudolabelling(model, train_data, val_data, test_data, loss_fxn
             corrects = 0
             for inputs, labels in test_dataloader:
                 inputs = inputs.to(device)
+                if cat_dog:
+                    labels = gen_cat_dog_label(cat_dog_dict, labels)
                 labels = labels.to(device)
                 outputs = model(inputs)
                 
