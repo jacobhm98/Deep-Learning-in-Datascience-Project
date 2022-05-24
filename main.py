@@ -94,25 +94,8 @@ def main():
     num_workers = 6
     prefetch_factor = 2
 
-    tfs = transforms.Compose([
-        transforms.Resize((255,255)),
-        #transforms.ColorJitter(),
-        #transforms.GaussianBlur(kernel_size=[5,5]),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomPerspective(),
-        transforms.RandomRotation(45),
-        #transforms.RandomResizedCrop((255,255), scale=(0.7,0.7)),
-    ])
 
-    # download the train and test dataset and create batches for train and test dataset
-    train_data, val_data, test_data = data_utils.download_dataset(
-        augmentation=True,
-        in_memory=False,
-        train_transforms=tfs,
-        val_transforms=tfs,
-        img_size=255
-    )
-    #train_data = data_utils.CombinedDataset("data/generated_images", train_data)
+    train_data, val_data, test_data = data_utils.create_combined_dataset("data/generated_images", "data/cropped_images")
 
     # get the dictionary of cats and dogs to perform classification for cats and dogs comment id not needed
     if no_classes == 2:
@@ -133,7 +116,7 @@ def main():
             train_data, val_data,
             loss_fxn, optimizer,
             no_epochs, device,
-            batch_size, cat_dog_dict, tfs,
+            batch_size, cat_dog_dict,
             num_workers=0,
             prefetch_factor=2)
     else:

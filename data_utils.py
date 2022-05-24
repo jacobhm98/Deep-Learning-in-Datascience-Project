@@ -331,6 +331,7 @@ def read_in_cropped_images(path):
     files_list = os.listdir(path)
     cropped_images = []
     curr_class = None
+    to_tensor = transforms.ToTensor()
     class_counter = -1
     for files in sorted(files_list):
         x = files.rsplit('_', 1)[0]
@@ -338,13 +339,26 @@ def read_in_cropped_images(path):
             curr_class = x
             class_counter += 1
         img = Image.open(os.path.join(path, files))
+        img = to_tensor(img)
+        cropped_images.append((img, class_counter))
+    return cropped_images
+
+
+def create_combined_dataset(path_to_generated_images, path_to_original_images, test_percentage=0.1, val_percentage=0.1):
+    dataset = CombinedDataset(path_to_generated_images, path_to_original_images)
+    test_size = int(len(dataset) * test_percentage)
+    val_size = int(len(dataset) * val_percentage)
+    train_size = len(dataset) - test_size - val_size
+    train_set, val_set, test_set = torch.utils.data.random_split(dataset, [train_size, val_size, test_size])
+    return train_set, val_set, test_set
+
 
 
 
 class CombinedDataset(torch.utils.data.Dataset):
     def __init__(self, path_to_generated_images, path_to_orig_images):
         super(CombinedDataset, self).__init__()
-        self.orig_data = orig_train_data
+        self.orig_data = read_in_cropped_images(path_to_orig_images)
         self.generated_data = read_in_generated_images(path_to_generated_images)
 
     def __len__(self):
