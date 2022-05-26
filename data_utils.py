@@ -424,13 +424,27 @@ def create_cat_dog_dict():
     return cat_dog_dict
 
 
-def create_train_plot(train_metrics_file):
-    train_metrics = pd.read_csv(train_metrics_file)
-    train_metrics.plot(x=0, y=1, kind="line", xlabel="batches trained")
+def create_train_plot():
+    train_metrics_1 = pd.read_csv("train_metrics_no_generated.csv")
+    ax = train_metrics_1.plot(x=0, y=1, kind="line", xlabel="batches trained")
+
+    train_metrics_2 = pd.read_csv("train_metrics_half_generated.csv")
+    train_metrics_2.plot(x=0, y=1, kind="line", xlabel="batches trained", ax=ax)
+
+    train_metrics_3 = pd.read_csv("train_metrics_full_generated.csv")
+    train_metrics_3.plot(x=0, y=1, kind="line", xlabel="batches trained", ax=ax)
+    ax.legend(["no generated data", "25% generated data", "50% generated data"])
     plt.show()
 
 
-def create_val_plot(val_metrics_file):
-    val_metrics = pd.read_csv(val_metrics_file)
-    val_metrics.plot(x=0, y=1, kind="line", xlabel="epochs")
+def create_val_plot():
+    val_metrics_1 = pd.read_csv("val_metrics_no_generated.csv")
+    ax = val_metrics_1.plot(x=0, y=1, kind="line", xlabel="epochs")
+
+    val_metrics_2 = pd.read_csv("val_metrics_half_generated.csv")
+    val_metrics_2.plot(x=0, y=1, kind="line", xlabel="epochs", ax=ax)
+
+    val_metrics_3 = pd.read_csv("val_metrics_full_generated.csv")
+    val_metrics_3.plot(x=0, y=1, kind="line", xlabel="epochs", ax=ax)
+    ax.legend(["no generated data", "25% generated data", "50% generated data"])
     plt.show()

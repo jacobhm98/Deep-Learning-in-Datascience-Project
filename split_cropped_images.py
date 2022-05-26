@@ -9,4 +9,4 @@ for item in os.listdir(path):
     if num == 1:
         im.save(path + "_test/" + item)
     else:
-        im.save(path + '/' +  item )
+        im.save(path + '_train/' +  item )
